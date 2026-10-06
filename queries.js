@@ -56,6 +56,13 @@ function listBatches() {
   return db.prepare('SELECT * FROM batches ORDER BY week_start DESC, id DESC').all();
 }
 
+// Deletes a batch and all of its merchants (ON DELETE CASCADE on merchants.batch_id).
+// Irreversible — the API layer requires admin + batch id confirmation before calling this.
+function deleteBatch(id) {
+  const info = db.prepare('DELETE FROM batches WHERE id = ?').run(id);
+  return info.changes > 0;
+}
+
 function batchStats(batchId) {
   const total = db.prepare('SELECT COUNT(*) c FROM merchants WHERE batch_id = ?').get(batchId).c;
   const completed = db
@@ -89,13 +96,13 @@ function perRmStatsForBatch(batchId) {
 }
 
 // ---------- Merchants ----------
-function insertMerchant({ batchId, rmUserId, rmNameRaw, mid, merchantName, valueWorth }) {
+function insertMerchant({ batchId, rmUserId, rmNameRaw, mid, merchantName, valueWorth, serviceType, currentRate }) {
   const info = db
     .prepare(
-      `INSERT INTO merchants (batch_id, rm_user_id, rm_name_raw, mid, merchant_name, value_worth)
-       VALUES (?,?,?,?,?,?)`
+      `INSERT INTO merchants (batch_id, rm_user_id, rm_name_raw, mid, merchant_name, value_worth, service_type, current_rate)
+       VALUES (?,?,?,?,?,?,?,?)`
     )
-    .run(batchId, rmUserId || null, rmNameRaw || null, mid, merchantName, valueWorth || 0);
+    .run(batchId, rmUserId || null, rmNameRaw || null, mid, merchantName, valueWorth || 0, serviceType || '', currentRate || '');
   return Number(info.lastInsertRowid);
 }
 
@@ -154,7 +161,7 @@ function reassignMerchant(id, rmUserId) {
 }
 
 function editMerchantFields(id, fields) {
-  const allowed = ['mid', 'merchant_name', 'value_worth'];
+  const allowed = ['mid', 'merchant_name', 'value_worth', 'service_type', 'current_rate'];
   const sets = [];
   const vals = [];
   for (const key of allowed) {
@@ -184,7 +191,7 @@ function overallStats(filters = {}) {
 
 module.exports = {
   listUsers, getUserByUsername, getUserById, insertUser, updateUser, setUserActive,
-  createBatch, getBatchById, listBatches, batchStats, perRmStatsForBatch,
+  createBatch, getBatchById, listBatches, deleteBatch, batchStats, perRmStatsForBatch,
   insertMerchant, getMerchantById, listMerchants, updateMerchantFeedback, reassignMerchant,
   editMerchantFields, overallStats,
 };

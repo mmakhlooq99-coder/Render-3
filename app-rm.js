@@ -37,7 +37,7 @@
           <div class="table-wrap">
             <table class="data-table" id="merchant-table">
               <thead>
-                <tr><th>MID</th><th>Merchant Name</th><th class="num">Value/Worth</th><th>Status</th><th style="min-width:280px;">Feedback</th><th></th></tr>
+                <tr><th>MID</th><th>Merchant Name</th><th class="num">Value/Worth</th><th>Service Type</th><th>Current Rate</th><th>Status</th><th style="min-width:280px;">Feedback</th><th></th></tr>
               </thead>
               <tbody id="merchant-tbody"></tbody>
             </table>
@@ -88,6 +88,8 @@
         <td>${escapeHtml(m.mid)}</td>
         <td><div>${escapeHtml(m.merchant_name)}</div><div class="muted" style="font-size:11.5px;">${escapeHtml(m.batch_label)}</div></td>
         <td class="num">${fmtMoney(m.value_worth)}</td>
+        <td>${escapeHtml(m.service_type) || '<span class="muted">—</span>'}</td>
+        <td>${escapeHtml(m.current_rate) || '<span class="muted">—</span>'}</td>
         <td>${statusPill(m.status)}</td>
         <td class="feedback-cell">
           <textarea placeholder="Write feedback here…">${escapeHtml(m.feedback)}</textarea>

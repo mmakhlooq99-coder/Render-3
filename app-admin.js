@@ -96,7 +96,7 @@
         <div class="card-body">
           <div class="table-wrap">
             <table class="data-table">
-              <thead><tr><th>Week</th><th>RM</th><th>MID</th><th>Merchant Name</th><th class="num">Value/Worth</th><th>Status</th><th>Feedback</th><th>Updated</th></tr></thead>
+              <thead><tr><th>Week</th><th>RM</th><th>MID</th><th>Merchant Name</th><th class="num">Value/Worth</th><th>Service Type</th><th>Current Rate</th><th>Status</th><th>Feedback</th><th>Updated</th></tr></thead>
               <tbody id="m-tbody"></tbody>
             </table>
           </div>
@@ -151,6 +151,8 @@
           <td>${escapeHtml(m.mid)}</td>
           <td>${escapeHtml(m.merchant_name)}</td>
           <td class="num">${fmtMoney(m.value_worth)}</td>
+          <td>${escapeHtml(m.service_type) || '<span class="muted">—</span>'}</td>
+          <td>${escapeHtml(m.current_rate) || '<span class="muted">—</span>'}</td>
           <td>${m.status === 'COMPLETED' ? '<span class="pill completed">● Completed</span>' : '<span class="pill pending">● Pending</span>'}</td>
           <td style="max-width:260px; white-space:pre-wrap;">${escapeHtml(m.feedback) || '<span class="muted">—</span>'}</td>
           <td class="muted" style="font-size:11.5px; white-space:nowrap;">${m.feedback_updated_at ? fmtDate(m.feedback_updated_at) : '—'}</td>
@@ -194,15 +196,16 @@
       .map(
         (b, i) => `
       <div class="card" style="margin-bottom:16px;">
-        <div class="card-header" style="cursor:pointer;" data-toggle="${b.id}">
-          <div>
+        <div class="card-header">
+          <div style="cursor:pointer; flex:1;" data-toggle="${b.id}">
             <h3>${escapeHtml(b.label)}</h3>
             <div class="muted" style="font-size:12.5px; margin-top:2px;">Week start: ${escapeHtml(b.week_start)} · ${b.stats.total} merchants · ${b.stats.completed} completed · ${b.stats.pending} pending</div>
           </div>
           <div class="row">
             <div class="progress-bar" style="width:140px;"><div class="fill" style="width:${b.stats.rate}%"></div></div>
             <span class="muted">${b.stats.rate}%</span>
-            <span class="muted" id="chev-${b.id}">▾</span>
+            <span class="muted" id="chev-${b.id}" data-toggle="${b.id}" style="cursor:pointer;">▾</span>
+            <button class="btn danger small" data-delete-batch="${b.id}" title="Delete this whole batch">Delete</button>
           </div>
         </div>
         <div class="card-body" id="body-${b.id}" style="display:${i === 0 ? 'block' : 'none'};">
@@ -224,6 +227,23 @@
         if (show && !body.dataset.loaded) {
           await loadBatchDetail(id, body);
           body.dataset.loaded = '1';
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-delete-batch]').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-delete-batch');
+        const card = btn.closest('.card');
+        const label = card.querySelector('h3').textContent;
+        if (!confirm(`Delete "${label}" and all its merchants? This cannot be undone.`)) return;
+        try {
+          await api('/api/batches/' + id, { method: 'DELETE' });
+          toast('Batch deleted', 'success');
+          card.remove();
+        } catch (err) {
+          toast(err.message, 'error');
         }
       });
     });
@@ -255,7 +275,7 @@
       </div>
       <div class="table-wrap">
         <table class="data-table">
-          <thead><tr><th>MID</th><th>Merchant</th><th>RM</th><th class="num">Value</th><th>Status</th><th>Feedback</th><th>Updated</th></tr></thead>
+          <thead><tr><th>MID</th><th>Merchant</th><th>RM</th><th class="num">Value</th><th>Service Type</th><th>Current Rate</th><th>Status</th><th>Feedback</th><th>Updated</th></tr></thead>
           <tbody>
             ${merchantsRes.merchants
               .map(
@@ -264,6 +284,8 @@
                   <td>${escapeHtml(m.merchant_name)}</td>
                   <td>${escapeHtml(m.rm_name || 'Unassigned')}</td>
                   <td class="num">${fmtMoney(m.value_worth)}</td>
+                  <td>${escapeHtml(m.service_type) || '<span class="muted">—</span>'}</td>
+                  <td>${escapeHtml(m.current_rate) || '<span class="muted">—</span>'}</td>
                   <td>${m.status === 'COMPLETED' ? '<span class="pill completed">● Completed</span>' : '<span class="pill pending">● Pending</span>'}</td>
                   <td style="max-width:240px; white-space:pre-wrap;">${escapeHtml(m.feedback) || '<span class="muted">—</span>'}</td>
                   <td class="muted" style="font-size:11.5px;">${m.feedback_updated_at ? fmtDate(m.feedback_updated_at) : '—'}</td>
@@ -423,7 +445,7 @@
           <div class="field">
             <label>Merchant file (.xlsx or .csv)</label>
             <input type="file" id="up-file" accept=".csv,.xlsx" />
-            <div class="help-text">Expected columns: <b>RM</b>, <b>MID</b>, <b>Merchant Name</b>, <b>Value/Worth</b>. RM names are matched to existing user accounts automatically — anything that doesn't match stays unassigned so you can assign it manually.</div>
+            <div class="help-text">Expected columns: <b>RM</b>, <b>MID</b>, <b>Merchant Name</b>, <b>Value/Worth</b>, <b>Service Type</b>, <b>Current Rate</b>. RM names are matched to existing user accounts automatically — anything that doesn't match stays unassigned so you can assign it manually. Uploaded the wrong file? You can delete the whole batch afterward from <a href="/admin/history">Weekly History</a>.</div>
           </div>
           <button class="btn" id="up-submit">Upload &amp; create weekly batch</button>
           <div id="up-result" style="margin-top:18px;"></div>

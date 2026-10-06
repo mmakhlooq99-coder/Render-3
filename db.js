@@ -62,4 +62,15 @@ CREATE INDEX IF NOT EXISTS idx_merchants_status ON merchants(status);
 CREATE INDEX IF NOT EXISTS idx_merchants_name ON merchants(merchant_name);
 `);
 
+// Migration: add service_type / current_rate to merchants if this is an
+// existing database from before these columns existed (CREATE TABLE IF NOT
+// EXISTS above doesn't touch an already-created table).
+const merchantCols = db.prepare("PRAGMA table_info(merchants)").all().map((c) => c.name);
+if (!merchantCols.includes('service_type')) {
+  db.exec("ALTER TABLE merchants ADD COLUMN service_type TEXT NOT NULL DEFAULT ''");
+}
+if (!merchantCols.includes('current_rate')) {
+  db.exec("ALTER TABLE merchants ADD COLUMN current_rate TEXT NOT NULL DEFAULT ''");
+}
+
 module.exports = db;

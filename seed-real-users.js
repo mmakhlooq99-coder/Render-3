@@ -5,7 +5,8 @@
 const auth = require('./auth');
 const q = require('./queries');
 
-// Username = firstname.lastname, lowercase, derived from the "User name" column.
+// Username = firstname.lastname, lowercase, derived from the "User name" column,
+// unless an explicit `username` is given (used when only a first name exists).
 const users = [
   { name: 'Abdulla Adel',        password: '1010', role: 'RM' },
   { name: 'Abdulrasool Hussain', password: '2010', role: 'RM' },
@@ -19,16 +20,18 @@ const users = [
   { name: 'Pranay Upadhyay',     password: '1000', role: 'ADMIN' },
   { name: 'Walaa Alaradi',       password: '2917', role: 'RM' },
   { name: 'Mohd Makhlooq',       password: '1999', role: 'ADMIN' },
+  { name: 'Amira',               password: '0099', role: 'ADMIN', username: 'amira' },
 ];
 
-function usernameFor(name) {
-  const parts = name.trim().toLowerCase().split(/\s+/);
+function usernameFor(u) {
+  if (u.username) return u.username.trim().toLowerCase();
+  const parts = u.name.trim().toLowerCase().split(/\s+/);
   return parts.length > 1 ? `${parts[0]}.${parts[parts.length - 1]}` : parts[0];
 }
 
 let created = 0, skipped = 0;
 for (const u of users) {
-  const username = usernameFor(u.name);
+  const username = usernameFor(u);
   const existing = q.getUserByUsername(username);
   if (existing) {
     console.log(`SKIP   ${u.name.padEnd(22)} username="${username}" already exists (id=${existing.id}, role=${existing.role}).`);

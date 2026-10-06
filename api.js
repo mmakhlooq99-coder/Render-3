@@ -132,6 +132,8 @@ function register(router) {
     if (body.mid !== undefined) fields.mid = String(body.mid);
     if (body.merchantName !== undefined) fields.merchant_name = String(body.merchantName);
     if (body.valueWorth !== undefined) fields.value_worth = Number(body.valueWorth) || 0;
+    if (body.serviceType !== undefined) fields.service_type = String(body.serviceType);
+    if (body.currentRate !== undefined) fields.current_rate = String(body.currentRate);
     const updated = q.editMerchantFields(Number(params.id), fields);
     sendJson(res, 200, { merchant: updated });
   }));
@@ -190,10 +192,12 @@ function register(router) {
     const colMid = findCol('mid', 'merchant id');
     const colName = findCol('merchant name', 'merchant', 'name');
     const colValue = findCol('value', 'worth', 'value/worth', 'value / worth', 'amount');
+    const colServiceType = findCol('service type', 'servicetype', 'service', 'type');
+    const colRate = findCol('current rate', 'rate', 'current rate %', 'rate %');
 
     if (colMid === -1 || colName === -1) {
       sendJson(res, 400, {
-        error: 'Could not find required columns. Expected headers: RM, MID, Merchant Name, Value/Worth',
+        error: 'Could not find required columns. Expected headers: RM, MID, Merchant Name, Value/Worth, Service Type, Current Rate',
       });
       return;
     }
@@ -215,6 +219,8 @@ function register(router) {
       const rmRaw = colRm !== -1 ? String(r[colRm] ?? '').trim() : '';
       const valueRaw = colValue !== -1 ? String(r[colValue] ?? '').trim() : '0';
       const valueWorth = Number(String(valueRaw).replace(/[,$\s]/g, '')) || 0;
+      const serviceType = colServiceType !== -1 ? String(r[colServiceType] ?? '').trim() : '';
+      const currentRate = colRate !== -1 ? String(r[colRate] ?? '').trim() : '';
 
       let matchedUser = null;
       if (rmRaw) {
@@ -229,6 +235,8 @@ function register(router) {
         mid,
         merchantName,
         valueWorth,
+        serviceType,
+        currentRate,
       });
       inserted++;
     }
@@ -238,6 +246,15 @@ function register(router) {
       inserted,
       unmatchedRmNames: Array.from(unmatchedRmNames),
     });
+  }));
+
+  router.del('/api/batches/:id', safeHandler(async (req, res, params) => {
+    if (!requireAdmin(req, res)) return;
+    const batchId = Number(params.id);
+    const batch = q.getBatchById(batchId);
+    if (!batch) { sendJson(res, 404, { error: 'Batch not found' }); return; }
+    q.deleteBatch(batchId);
+    sendJson(res, 200, { ok: true });
   }));
 
   // ---------- Stats ----------
