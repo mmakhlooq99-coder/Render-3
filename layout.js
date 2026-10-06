@@ -33,7 +33,8 @@ function page({ title, user, activeNav, bodyHtml, script }) {
 <body>
 <div id="toast-root"></div>
 <div class="app">
-  <div class="sidebar">
+  <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
+  <div class="sidebar" id="sidebar">
     <div class="brand">Reactivation Platform<small>Merchant Reactivation Tracking</small></div>
     ${navHtml}
     <div class="sidebar-footer">
@@ -44,6 +45,9 @@ function page({ title, user, activeNav, bodyHtml, script }) {
   </div>
   <div class="main">
     <div class="topbar">
+      <button class="hamburger-btn" id="hamburger-btn" onclick="openSidebar()" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
       <h2>${escapeHtml(title)}</h2>
     </div>
     <div class="content" id="content">
@@ -52,6 +56,10 @@ function page({ title, user, activeNav, bodyHtml, script }) {
   </div>
 </div>
 <script src="/static/common.js"></script>
+<script>
+  // Close the mobile nav drawer automatically after choosing a page
+  document.querySelectorAll('.nav-item').forEach((el) => el.addEventListener('click', closeSidebar));
+</script>
 ${script ? `<script src="${script}"></script>` : ''}
 </body>
 </html>`;

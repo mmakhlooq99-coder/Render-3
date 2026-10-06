@@ -56,6 +56,22 @@ function debounce(fn, ms) {
   };
 }
 
+function openSidebar() {
+  const sb = document.getElementById('sidebar');
+  const bd = document.getElementById('sidebar-backdrop');
+  if (sb) sb.classList.add('open');
+  if (bd) bd.classList.add('open');
+  document.body.classList.add('no-scroll');
+}
+
+function closeSidebar() {
+  const sb = document.getElementById('sidebar');
+  const bd = document.getElementById('sidebar-backdrop');
+  if (sb) sb.classList.remove('open');
+  if (bd) bd.classList.remove('open');
+  document.body.classList.remove('no-scroll');
+}
+
 function openChangePasswordModal() {
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';

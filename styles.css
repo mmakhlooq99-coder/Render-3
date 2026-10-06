@@ -129,12 +129,23 @@ a:hover { text-decoration: underline; }
   height: 60px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; justify-content: flex-start; gap: 12px;
   padding: 0 28px;
   flex-shrink: 0;
 }
 .topbar h2 { font-size: 17px; margin: 0; }
 .content { padding: 24px 28px; flex: 1; }
+
+/* Hamburger button: hidden on desktop, shown only below the mobile breakpoint */
+.hamburger-btn {
+  display: none;
+  flex-direction: column; justify-content: center; gap: 4px;
+  width: 36px; height: 36px; padding: 0;
+  background: transparent; border: 1px solid var(--border); border-radius: 8px;
+  cursor: pointer; flex-shrink: 0;
+}
+.hamburger-btn span { display: block; width: 18px; height: 2px; background: var(--text); margin: 0 auto; border-radius: 2px; }
+.sidebar-backdrop { display: none; }
 
 /* ---------- Cards / stats ---------- */
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 22px; }
@@ -214,3 +225,97 @@ table.data-table td.num { text-align: right; font-variant-numeric: tabular-nums;
 .close-x { cursor: pointer; color: var(--text-muted); font-size: 18px; line-height: 1; }
 .progress-bar { height: 7px; border-radius: 999px; background: #eef0f4; overflow: hidden; }
 .progress-bar .fill { height: 100%; background: var(--primary); }
+
+/* ======================================================================
+   Mobile — tablets and phones. The sidebar becomes an off-canvas drawer
+   opened by the hamburger button; everything else gets tighter spacing
+   and bigger touch targets.
+   ====================================================================== */
+@media (max-width: 880px) {
+  .hamburger-btn { display: flex; }
+
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform .22s ease;
+    box-shadow: 2px 0 24px rgba(0,0,0,.25);
+    width: min(var(--sidebar-w), 82vw);
+  }
+  .sidebar.open { transform: translateX(0); }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed; inset: 0;
+    background: rgba(16,24,40,.5);
+    z-index: 999;
+    opacity: 0; pointer-events: none;
+    transition: opacity .22s ease;
+  }
+  .sidebar-backdrop.open { opacity: 1; pointer-events: auto; }
+
+  body.no-scroll { overflow: hidden; }
+
+  /* Bigger tap targets in the drawer nav */
+  .nav-item { padding: 13px 20px; font-size: 14.5px; }
+
+  .topbar { padding: 0 14px; height: 54px; }
+  .topbar h2 { font-size: 15.5px; }
+  .content { padding: 14px; }
+
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stat-card { padding: 12px 14px; }
+  .stat-card .value { font-size: 21px; }
+
+  .card-header { padding: 13px 14px; }
+  .card-body { padding: 14px; }
+
+  /* Filter bars stack full-width instead of wrapping into a cramped row */
+  .toolbar { flex-direction: column; align-items: stretch; }
+  .toolbar input, .toolbar select { width: 100%; min-height: 40px; }
+  .toolbar .spacer { display: none; }
+  .toolbar .btn { width: 100%; }
+
+  table.data-table { font-size: 12.5px; }
+  table.data-table th, table.data-table td { padding: 9px 10px; }
+  .table-wrap { -webkit-overflow-scrolling: touch; }
+
+  .modal { width: 94vw; }
+
+  .btn { min-height: 42px; }
+}
+
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .login-card { padding: 28px 22px; width: 100%; }
+  .login-wrap { padding: 16px; }
+}
+
+/* My Merchants (RM dashboard) — the page field reps use most on a phone.
+   Below 640px the table collapses into one stacked card per merchant
+   instead of forcing horizontal scrolling through 7 columns. */
+@media (max-width: 640px) {
+  table.data-table.stack-mobile thead { display: none; }
+  table.data-table.stack-mobile, table.data-table.stack-mobile tbody,
+  table.data-table.stack-mobile tr, table.data-table.stack-mobile td {
+    display: block; width: 100%;
+  }
+  table.data-table.stack-mobile tr {
+    border: 1px solid var(--border); border-radius: var(--radius);
+    margin-bottom: 12px; padding: 10px 12px; box-shadow: var(--shadow);
+  }
+  table.data-table.stack-mobile td {
+    border-bottom: none; padding: 7px 0;
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
+  }
+  table.data-table.stack-mobile td.num { text-align: left; }
+  table.data-table.stack-mobile td[data-label]::before {
+    content: attr(data-label);
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em;
+    color: var(--text-muted); flex-shrink: 0; padding-top: 2px;
+  }
+  table.data-table.stack-mobile td.feedback-cell { display: block; }
+  table.data-table.stack-mobile td.feedback-cell::before { display: block; margin-bottom: 6px; }
+  table.data-table.stack-mobile .feedback-cell textarea { min-width: 0; }
+}

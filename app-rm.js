@@ -35,7 +35,7 @@
         </div>
         <div class="card-body">
           <div class="table-wrap">
-            <table class="data-table" id="merchant-table">
+            <table class="data-table stack-mobile" id="merchant-table">
               <thead>
                 <tr><th>MID</th><th>Merchant Name</th><th class="num">Value/Worth</th><th>Service Type</th><th>Current Rate</th><th>Status</th><th style="min-width:280px;">Feedback</th><th></th></tr>
               </thead>
@@ -85,20 +85,20 @@
       .map(
         (m) => `
       <tr data-id="${m.id}">
-        <td>${escapeHtml(m.mid)}</td>
-        <td><div>${escapeHtml(m.merchant_name)}</div><div class="muted" style="font-size:11.5px;">${escapeHtml(m.batch_label)}</div></td>
-        <td class="num">${fmtMoney(m.value_worth)}</td>
-        <td>${escapeHtml(m.service_type) || '<span class="muted">—</span>'}</td>
-        <td>${escapeHtml(m.current_rate) || '<span class="muted">—</span>'}</td>
-        <td>${statusPill(m.status)}</td>
-        <td class="feedback-cell">
+        <td data-label="MID">${escapeHtml(m.mid)}</td>
+        <td data-label="Merchant"><div>${escapeHtml(m.merchant_name)}</div><div class="muted" style="font-size:11.5px;">${escapeHtml(m.batch_label)}</div></td>
+        <td class="num" data-label="Value/Worth">${fmtMoney(m.value_worth)}</td>
+        <td data-label="Service Type">${escapeHtml(m.service_type) || '<span class="muted">—</span>'}</td>
+        <td data-label="Current Rate">${escapeHtml(m.current_rate) || '<span class="muted">—</span>'}</td>
+        <td data-label="Status">${statusPill(m.status)}</td>
+        <td class="feedback-cell" data-label="Feedback">
           <textarea placeholder="Write feedback here…">${escapeHtml(m.feedback)}</textarea>
           <div class="feedback-save-row">
             <span class="save-status" data-role="status"></span>
             <button class="btn small save-btn">Save</button>
           </div>
         </td>
-        <td class="muted" style="font-size:11.5px; white-space:nowrap;">${m.feedback_updated_at ? 'Updated ' + fmtDate(m.feedback_updated_at) : ''}</td>
+        <td class="muted" style="font-size:11.5px; white-space:nowrap;" data-label="Updated">${m.feedback_updated_at ? 'Updated ' + fmtDate(m.feedback_updated_at) : ''}</td>
       </tr>
     `
       )
