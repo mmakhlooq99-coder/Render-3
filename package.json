@@ -1,0 +1,16 @@
+{
+  "name": "reactivation-merchant-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Standalone live platform for managing the weekly Reactivation Merchant process. Zero external dependencies — built on Node.js built-ins only. Flat file layout (no subfolders) for simple hosting-provider uploads.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node seed.js",
+    "seed:demo": "node seed.js --demo",
+    "seed:real": "node seed-real-users.js"
+  },
+  "engines": {
+    "node": "22.22.0"
+  }
+}
