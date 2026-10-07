@@ -5,7 +5,10 @@ const { DatabaseSync } = require('node:sqlite');
 const path = require('node:path');
 const fs = require('node:fs');
 
-const DATA_DIR = path.join(__dirname, 'data');
+// DATA_DIR can be overridden with an env var so the database can live on a
+// persistent disk (e.g. Render's attached disk mounted at /var/data) instead
+// of the app folder itself, which gets wiped every time the service restarts.
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 const DB_PATH = path.join(DATA_DIR, 'app.db');
 
