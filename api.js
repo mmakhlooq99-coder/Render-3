@@ -386,9 +386,11 @@ function register(router) {
       return;
     }
 
-    const activeRms = q.listUsers().filter((u) => u.role === 'RM');
-    const rmByName = new Map(activeRms.map((u) => [u.name.trim().toLowerCase(), u]));
-    const rmByUsername = new Map(activeRms.map((u) => [u.username.trim().toLowerCase(), u]));
+    // Match against every active account (RM or Admin) — in this tracking
+    // data, an admin can also carry their own book of merchants.
+    const activeUsers = q.listUsers();
+    const rmByName = new Map(activeUsers.map((u) => [u.name.trim().toLowerCase(), u]));
+    const rmByUsername = new Map(activeUsers.map((u) => [u.username.trim().toLowerCase(), u]));
 
     const batch = q.createTrackingBatch({ dateLabel, rangeLabel, createdBy: req.user.id });
 
