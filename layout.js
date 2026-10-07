@@ -4,20 +4,41 @@ function escapeHtml(s) {
 
 function page({ title, user, activeNav, bodyHtml, script }) {
   const isAdmin = user && user.role === 'ADMIN';
-  const navItems = isAdmin
+  // Two tools share this platform. Each gets its own labeled group in the
+  // sidebar so the team can tell at a glance which one they're in.
+  const navGroups = isAdmin
     ? [
-        ['overview', '/admin', 'Overview'],
-        ['merchants', '/admin/merchants', 'All Merchants'],
-        ['history', '/admin/history', 'Weekly History'],
-        ['rms', '/admin/rms', 'RM Management'],
-        ['upload', '/admin/upload', 'Weekly Upload'],
+        {
+          label: 'Reactivation',
+          items: [
+            ['overview', '/admin', 'Overview'],
+            ['merchants', '/admin/merchants', 'All Merchants'],
+            ['history', '/admin/history', 'Weekly History'],
+            ['rms', '/admin/rms', 'RM Management'],
+            ['upload', '/admin/upload', 'Weekly Upload'],
+          ],
+        },
+        {
+          label: 'Merchant Tracking',
+          items: [['tracking', '/tracking', 'Tracking Dashboard']],
+        },
       ]
-    : [['dashboard', '/rm', 'My Merchants']];
+    : [
+        { label: 'Reactivation', items: [['dashboard', '/rm', 'My Merchants']] },
+        { label: 'Merchant Tracking', items: [['tracking', '/tracking', 'My Tracking']] },
+      ];
 
-  const navHtml = navItems
+  const navHtml = navGroups
     .map(
-      ([key, href, label]) =>
-        `<div class="nav-item ${activeNav === key ? 'active' : ''}" onclick="location.href='${href}'">${escapeHtml(label)}</div>`
+      (group) => `
+      <div class="nav-section-label">${escapeHtml(group.label)}</div>
+      ${group.items
+        .map(
+          ([key, href, label]) =>
+            `<div class="nav-item ${activeNav === key ? 'active' : ''}" onclick="location.href='${href}'">${escapeHtml(label)}</div>`
+        )
+        .join('')}
+    `
     )
     .join('');
 

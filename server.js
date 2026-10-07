@@ -16,7 +16,7 @@ api.register(router);
 // folder. Serve only this exact allowlist under /static/ so app source files
 // (auth.js, db.js, etc., which also live in this directory) are never exposed.
 const PUBLIC_DIR = __dirname;
-const STATIC_ALLOWLIST = new Set(['styles.css', 'common.js', 'app-rm.js', 'app-admin.js', 'favicon.svg']);
+const STATIC_ALLOWLIST = new Set(['styles.css', 'common.js', 'app-rm.js', 'app-admin.js', 'app-tracking.js', 'favicon.svg']);
 
 const server = http.createServer(async (req, res) => {
   try {

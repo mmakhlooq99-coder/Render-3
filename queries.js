@@ -189,9 +189,97 @@ function overallStats(filters = {}) {
   return { total, completed, pending: total - completed, rate: total ? Math.round((completed / total) * 1000) / 10 : 0 };
 }
 
+// ---------- Merchant Tracking (separate tool) ----------
+function createTrackingBatch({ dateLabel, rangeLabel, createdBy }) {
+  const info = db
+    .prepare('INSERT INTO tracking_batches (date_label, range_label, created_by) VALUES (?,?,?)')
+    .run(dateLabel, rangeLabel, createdBy);
+  return getTrackingBatchById(Number(info.lastInsertRowid));
+}
+
+function getTrackingBatchById(id) {
+  return db.prepare('SELECT * FROM tracking_batches WHERE id = ?').get(id);
+}
+
+function listTrackingBatches() {
+  return db.prepare('SELECT * FROM tracking_batches ORDER BY id DESC').all();
+}
+
+function getLatestTrackingBatch() {
+  return db.prepare('SELECT * FROM tracking_batches ORDER BY id DESC LIMIT 1').get();
+}
+
+function deleteTrackingBatch(id) {
+  const info = db.prepare('DELETE FROM tracking_batches WHERE id = ?').run(id);
+  return info.changes > 0;
+}
+
+function insertTrackingMerchant({
+  batchId, rmUserId, rmNameRaw, mid, merchantName, priority, statusLabel,
+  latestValue, lastActiveLabel, daysInactive, grandTotal,
+}) {
+  const info = db
+    .prepare(
+      `INSERT INTO tracking_merchants
+         (batch_id, rm_user_id, rm_name_raw, mid, merchant_name, priority, status_label, latest_value, last_active_label, days_inactive, grand_total)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?)`
+    )
+    .run(
+      batchId, rmUserId || null, rmNameRaw || null, mid, merchantName,
+      priority || 'Watch', statusLabel || '', latestValue || 0,
+      lastActiveLabel || '', daysInactive || 0, grandTotal || 0
+    );
+  return Number(info.lastInsertRowid);
+}
+
+function listTrackingMerchants({ batchId, rmUserId } = {}) {
+  const where = [];
+  const vals = [];
+  if (batchId) { where.push('tm.batch_id = ?'); vals.push(batchId); }
+  if (rmUserId) { where.push('tm.rm_user_id = ?'); vals.push(rmUserId); }
+  const sql = `
+    SELECT tm.*, u.name as rm_name
+    FROM tracking_merchants tm
+    LEFT JOIN users u ON u.id = tm.rm_user_id
+    ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+    ORDER BY
+      CASE tm.priority WHEN 'Urgent' THEN 0 WHEN 'Watch' THEN 1 ELSE 2 END,
+      tm.grand_total DESC
+  `;
+  return db.prepare(sql).all(...vals);
+}
+
+function trackingRmSummary(batchId) {
+  return db
+    .prepare(
+      `SELECT
+         u.id as rm_id, u.name as rm_name,
+         COUNT(tm.id) as total,
+         SUM(CASE WHEN tm.priority='Urgent' THEN 1 ELSE 0 END) as urgent,
+         SUM(CASE WHEN tm.priority='Watch' THEN 1 ELSE 0 END) as watch,
+         SUM(tm.grand_total) as value
+       FROM tracking_merchants tm
+       LEFT JOIN users u ON u.id = tm.rm_user_id
+       WHERE tm.batch_id = ?
+       GROUP BY u.id
+       ORDER BY value DESC`
+    )
+    .all(batchId)
+    .map((r) => ({
+      rmId: r.rm_id,
+      rmName: r.rm_name || 'Unassigned',
+      total: r.total,
+      urgent: r.urgent,
+      watch: r.watch,
+      value: r.value || 0,
+    }));
+}
+
 module.exports = {
   listUsers, getUserByUsername, getUserById, insertUser, updateUser, setUserActive,
   createBatch, getBatchById, listBatches, deleteBatch, batchStats, perRmStatsForBatch,
   insertMerchant, getMerchantById, listMerchants, updateMerchantFeedback, reassignMerchant,
   editMerchantFields, overallStats,
+  createTrackingBatch, getTrackingBatchById, listTrackingBatches, getLatestTrackingBatch,
+  deleteTrackingBatch, insertTrackingMerchant, listTrackingMerchants, trackingRmSummary,
 };

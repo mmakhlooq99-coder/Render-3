@@ -63,6 +63,36 @@ CREATE INDEX IF NOT EXISTS idx_merchants_rm ON merchants(rm_user_id);
 CREATE INDEX IF NOT EXISTS idx_merchants_mid ON merchants(mid);
 CREATE INDEX IF NOT EXISTS idx_merchants_status ON merchants(status);
 CREATE INDEX IF NOT EXISTS idx_merchants_name ON merchants(merchant_name);
+
+-- "Merchant Tracking" — a separate tool living in the same platform: tracks
+-- merchants with blank/near-zero turnover on a given snapshot date, grouped
+-- into priority buckets (Urgent / Watch / Recent) so RMs know who to call.
+CREATE TABLE IF NOT EXISTS tracking_batches (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  date_label TEXT NOT NULL,
+  range_label TEXT NOT NULL,
+  created_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS tracking_merchants (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  batch_id INTEGER NOT NULL REFERENCES tracking_batches(id) ON DELETE CASCADE,
+  rm_user_id INTEGER REFERENCES users(id),
+  rm_name_raw TEXT,
+  mid TEXT NOT NULL,
+  merchant_name TEXT NOT NULL,
+  priority TEXT NOT NULL DEFAULT 'Watch' CHECK (priority IN ('Urgent','Watch','Recent')),
+  status_label TEXT NOT NULL DEFAULT '',
+  latest_value REAL NOT NULL DEFAULT 0,
+  last_active_label TEXT NOT NULL DEFAULT '',
+  days_inactive INTEGER NOT NULL DEFAULT 0,
+  grand_total REAL NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_tm_batch ON tracking_merchants(batch_id);
+CREATE INDEX IF NOT EXISTS idx_tm_rm ON tracking_merchants(rm_user_id);
 `);
 
 // Migration: add service_type / current_rate to merchants if this is an

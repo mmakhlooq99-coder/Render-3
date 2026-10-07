@@ -40,6 +40,13 @@ function register(router) {
   router.get('/admin/history', async (req, res) => adminPage(req, res, { title: 'Weekly History', activeNav: 'history', dataPage: 'history' }));
   router.get('/admin/rms', async (req, res) => adminPage(req, res, { title: 'RM Management', activeNav: 'rms', dataPage: 'rms' }));
   router.get('/admin/upload', async (req, res) => adminPage(req, res, { title: 'Weekly Upload', activeNav: 'upload', dataPage: 'upload' }));
+
+  // ---------- Merchant Tracking (shared page — content adapts by role) ----------
+  router.get('/tracking', async (req, res) => {
+    if (!req.user) { res.writeHead(302, { Location: '/login' }); res.end(); return; }
+    const body = `<div id="page-root" data-page="tracking"></div>`;
+    sendHtml(res, 200, page({ title: 'Merchant Tracking', user: req.user, activeNav: 'tracking', bodyHtml: body, script: '/static/app-tracking.js' }));
+  });
 }
 
 module.exports = { register };

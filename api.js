@@ -315,6 +315,129 @@ function register(router) {
     q.setUserActive(Number(params.id), false);
     sendJson(res, 200, { ok: true });
   }));
+
+  // ---------- Merchant Tracking (separate tool, same login) ----------
+  router.get('/api/tracking/batches', safeHandler(async (req, res) => {
+    if (!requireAuth(req, res)) return;
+    sendJson(res, 200, { batches: q.listTrackingBatches() });
+  }));
+
+  router.get('/api/tracking/merchants', safeHandler(async (req, res, params, query) => {
+    if (!requireAuth(req, res)) return;
+    let batchId = query.batchId ? Number(query.batchId) : undefined;
+    if (!batchId) {
+      const latest = q.getLatestTrackingBatch();
+      batchId = latest ? latest.id : undefined;
+    }
+    const filters = { batchId };
+    if (req.user.role !== 'ADMIN') filters.rmUserId = req.user.id; // RMs only ever see their own book
+    const rows = batchId ? q.listTrackingMerchants(filters) : [];
+    sendJson(res, 200, { batchId: batchId || null, merchants: rows });
+  }));
+
+  router.get('/api/tracking/batches/:id/summary', safeHandler(async (req, res, params) => {
+    if (!requireAdmin(req, res)) return;
+    sendJson(res, 200, { perRm: q.trackingRmSummary(Number(params.id)) });
+  }));
+
+  router.post('/api/tracking/upload', safeHandler(async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const contentType = req.headers['content-type'] || '';
+    if (!contentType.startsWith('multipart/form-data')) {
+      sendJson(res, 400, { error: 'Expected multipart/form-data upload with a file field' });
+      return;
+    }
+    const buf = await readRawBody(req);
+    const { fields, files } = parseMultipart(buf, contentType);
+    const dateLabel = (fields.dateLabel || '').trim();
+    const rangeLabel = (fields.rangeLabel || '').trim();
+    if (!dateLabel || !rangeLabel) {
+      sendJson(res, 400, { error: 'Snapshot date and period range are required' });
+      return;
+    }
+    const file = files.find((f) => f.fieldName === 'file');
+    if (!file) { sendJson(res, 400, { error: 'No file uploaded' }); return; }
+
+    let rows;
+    const lowerName = file.filename.toLowerCase();
+    if (lowerName.endsWith('.xlsx')) {
+      rows = parseXlsxBuffer(file.data);
+    } else {
+      rows = parseCsv(file.data.toString('utf8'));
+    }
+    if (!rows.length) { sendJson(res, 400, { error: 'The uploaded file is empty' }); return; }
+
+    const header = rows[0].map((h) => String(h).trim().toLowerCase());
+    const findCol = (...names) => header.findIndex((h) => names.includes(h));
+    const colRm = findCol('rm', 'relationship manager', 'rm name');
+    const colMid = findCol('mid', 'merchant id');
+    const colName = findCol('merchant name', 'merchant', 'name');
+    const colPriority = findCol('priority');
+    const colStatus = findCol('status');
+    const colLatestValue = findCol('latest day value', 'latest value', 'value on date');
+    const colLastActive = findCol('last active', 'last active date', 'last active label');
+    const colDaysInactive = findCol('days inactive', 'days since active');
+    const colGrandTotal = findCol('grand total', 'value at risk', 'total value');
+
+    if (colMid === -1 || colName === -1) {
+      sendJson(res, 400, {
+        error: 'Could not find required columns. Expected headers: RM, MID, Merchant Name, Priority, Status, Latest Day Value, Last Active, Days Inactive, Grand Total',
+      });
+      return;
+    }
+
+    const activeRms = q.listUsers().filter((u) => u.role === 'RM');
+    const rmByName = new Map(activeRms.map((u) => [u.name.trim().toLowerCase(), u]));
+    const rmByUsername = new Map(activeRms.map((u) => [u.username.trim().toLowerCase(), u]));
+
+    const batch = q.createTrackingBatch({ dateLabel, rangeLabel, createdBy: req.user.id });
+
+    let inserted = 0;
+    const unmatchedRmNames = new Set();
+    const num = (v) => Number(String(v ?? '').replace(/[,$\s]/g, '')) || 0;
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r || r.every((c) => String(c).trim() === '')) continue;
+      const mid = String(r[colMid] ?? '').trim();
+      const merchantName = String(r[colName] ?? '').trim();
+      if (!mid && !merchantName) continue;
+      const rmRaw = colRm !== -1 ? String(r[colRm] ?? '').trim() : '';
+      let priority = colPriority !== -1 ? String(r[colPriority] ?? '').trim() : 'Watch';
+      if (!['Urgent', 'Watch', 'Recent'].includes(priority)) priority = 'Watch';
+
+      let matchedUser = null;
+      if (rmRaw) {
+        matchedUser = rmByName.get(rmRaw.toLowerCase()) || rmByUsername.get(rmRaw.toLowerCase()) || null;
+        if (!matchedUser) unmatchedRmNames.add(rmRaw);
+      }
+
+      q.insertTrackingMerchant({
+        batchId: batch.id,
+        rmUserId: matchedUser ? matchedUser.id : null,
+        rmNameRaw: rmRaw || null,
+        mid,
+        merchantName,
+        priority,
+        statusLabel: colStatus !== -1 ? String(r[colStatus] ?? '').trim() : '',
+        latestValue: colLatestValue !== -1 ? num(r[colLatestValue]) : 0,
+        lastActiveLabel: colLastActive !== -1 ? String(r[colLastActive] ?? '').trim() : '',
+        daysInactive: colDaysInactive !== -1 ? Math.round(num(r[colDaysInactive])) : 0,
+        grandTotal: colGrandTotal !== -1 ? num(r[colGrandTotal]) : 0,
+      });
+      inserted++;
+    }
+
+    sendJson(res, 200, { batch, inserted, unmatchedRmNames: Array.from(unmatchedRmNames) });
+  }));
+
+  router.del('/api/tracking/batches/:id', safeHandler(async (req, res, params) => {
+    if (!requireAdmin(req, res)) return;
+    const batchId = Number(params.id);
+    const batch = q.getTrackingBatchById(batchId);
+    if (!batch) { sendJson(res, 404, { error: 'Snapshot not found' }); return; }
+    q.deleteTrackingBatch(batchId);
+    sendJson(res, 200, { ok: true });
+  }));
 }
 
 module.exports = { register };
