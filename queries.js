@@ -96,13 +96,16 @@ function perRmStatsForBatch(batchId) {
 }
 
 // ---------- Merchants ----------
-function insertMerchant({ batchId, rmUserId, rmNameRaw, mid, merchantName, valueWorth, serviceType, currentRate }) {
+function insertMerchant({ batchId, rmUserId, rmNameRaw, mid, merchantName, valueWorth, serviceType, currentRate, contact1, contact2, contact3 }) {
   const info = db
     .prepare(
-      `INSERT INTO merchants (batch_id, rm_user_id, rm_name_raw, mid, merchant_name, value_worth, service_type, current_rate)
-       VALUES (?,?,?,?,?,?,?,?)`
+      `INSERT INTO merchants (batch_id, rm_user_id, rm_name_raw, mid, merchant_name, value_worth, service_type, current_rate, contact_1, contact_2, contact_3)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?)`
     )
-    .run(batchId, rmUserId || null, rmNameRaw || null, mid, merchantName, valueWorth || 0, serviceType || '', currentRate || '');
+    .run(
+      batchId, rmUserId || null, rmNameRaw || null, mid, merchantName, valueWorth || 0,
+      serviceType || '', currentRate || '', contact1 || '', contact2 || '', contact3 || ''
+    );
   return Number(info.lastInsertRowid);
 }
 
@@ -161,7 +164,7 @@ function reassignMerchant(id, rmUserId) {
 }
 
 function editMerchantFields(id, fields) {
-  const allowed = ['mid', 'merchant_name', 'value_worth', 'service_type', 'current_rate'];
+  const allowed = ['mid', 'merchant_name', 'value_worth', 'service_type', 'current_rate', 'contact_1', 'contact_2', 'contact_3'];
   const sets = [];
   const vals = [];
   for (const key of allowed) {

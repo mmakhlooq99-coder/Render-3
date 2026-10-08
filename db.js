@@ -105,5 +105,14 @@ if (!merchantCols.includes('service_type')) {
 if (!merchantCols.includes('current_rate')) {
   db.exec("ALTER TABLE merchants ADD COLUMN current_rate TEXT NOT NULL DEFAULT ''");
 }
+if (!merchantCols.includes('contact_1')) {
+  db.exec("ALTER TABLE merchants ADD COLUMN contact_1 TEXT NOT NULL DEFAULT ''");
+}
+if (!merchantCols.includes('contact_2')) {
+  db.exec("ALTER TABLE merchants ADD COLUMN contact_2 TEXT NOT NULL DEFAULT ''");
+}
+if (!merchantCols.includes('contact_3')) {
+  db.exec("ALTER TABLE merchants ADD COLUMN contact_3 TEXT NOT NULL DEFAULT ''");
+}
 
 module.exports = db;

@@ -134,6 +134,9 @@ function register(router) {
     if (body.valueWorth !== undefined) fields.value_worth = Number(body.valueWorth) || 0;
     if (body.serviceType !== undefined) fields.service_type = String(body.serviceType);
     if (body.currentRate !== undefined) fields.current_rate = String(body.currentRate);
+    if (body.contact1 !== undefined) fields.contact_1 = String(body.contact1);
+    if (body.contact2 !== undefined) fields.contact_2 = String(body.contact2);
+    if (body.contact3 !== undefined) fields.contact_3 = String(body.contact3);
     const updated = q.editMerchantFields(Number(params.id), fields);
     sendJson(res, 200, { merchant: updated });
   }));
@@ -194,10 +197,13 @@ function register(router) {
     const colValue = findCol('value', 'worth', 'value/worth', 'value / worth', 'amount');
     const colServiceType = findCol('service type', 'servicetype', 'service', 'type');
     const colRate = findCol('current rate', 'rate', 'current rate %', 'rate %');
+    const colContact1 = findCol('contact no. 1', 'contact no 1', 'contact 1', 'contact1');
+    const colContact2 = findCol('contact no. 2', 'contact no 2', 'contact 2', 'contact2');
+    const colContact3 = findCol('contact no. 3', 'contact no 3', 'contact 3', 'contact3');
 
     if (colMid === -1 || colName === -1) {
       sendJson(res, 400, {
-        error: 'Could not find required columns. Expected headers: RM, MID, Merchant Name, Value/Worth, Service Type, Current Rate',
+        error: 'Could not find required columns. Expected headers: RM, MID, Merchant Name, Value/Worth, Service Type, Current Rate, Contact No. 1, Contact No. 2, Contact No. 3',
       });
       return;
     }
@@ -221,6 +227,9 @@ function register(router) {
       const valueWorth = Number(String(valueRaw).replace(/[,$\s]/g, '')) || 0;
       const serviceType = colServiceType !== -1 ? String(r[colServiceType] ?? '').trim() : '';
       const currentRate = colRate !== -1 ? String(r[colRate] ?? '').trim() : '';
+      const contact1 = colContact1 !== -1 ? String(r[colContact1] ?? '').trim() : '';
+      const contact2 = colContact2 !== -1 ? String(r[colContact2] ?? '').trim() : '';
+      const contact3 = colContact3 !== -1 ? String(r[colContact3] ?? '').trim() : '';
 
       let matchedUser = null;
       if (rmRaw) {
@@ -237,6 +246,9 @@ function register(router) {
         valueWorth,
         serviceType,
         currentRate,
+        contact1,
+        contact2,
+        contact3,
       });
       inserted++;
     }

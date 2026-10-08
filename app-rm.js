@@ -37,7 +37,7 @@
           <div class="table-wrap">
             <table class="data-table stack-mobile" id="merchant-table">
               <thead>
-                <tr><th>MID</th><th>Merchant Name</th><th class="num">Value/Worth</th><th>Service Type</th><th>Current Rate</th><th>Status</th><th style="min-width:280px;">Feedback</th><th></th></tr>
+                <tr><th>MID</th><th>Merchant Name</th><th class="num">Value/Worth</th><th>Service Type</th><th>Current Rate</th><th>Contact 1</th><th>Contact 2</th><th>Contact 3</th><th>Status</th><th style="min-width:280px;">Feedback</th><th></th></tr>
               </thead>
               <tbody id="merchant-tbody"></tbody>
             </table>
@@ -90,7 +90,10 @@
         <td class="num" data-label="Value/Worth">${fmtMoney(m.value_worth)}</td>
         <td data-label="Service Type">${escapeHtml(m.service_type) || '<span class="muted">—</span>'}</td>
         <td data-label="Current Rate">${escapeHtml(m.current_rate) || '<span class="muted">—</span>'}</td>
-        <td data-label="Status">${statusPill(m.status)}</td>
+        <td data-label="Contact 1">${escapeHtml(m.contact_1) || '<span class="muted">—</span>'}</td>
+        <td data-label="Contact 2">${escapeHtml(m.contact_2) || '<span class="muted">—</span>'}</td>
+        <td data-label="Contact 3">${escapeHtml(m.contact_3) || '<span class="muted">—</span>'}</td>
+        <td data-label="Status" data-role="status-cell">${statusPill(m.status)}</td>
         <td class="feedback-cell" data-label="Feedback">
           <textarea placeholder="Write feedback here…">${escapeHtml(m.feedback)}</textarea>
           <div class="feedback-save-row">
@@ -128,8 +131,8 @@
       if (idx !== -1) merchants[idx] = merchant;
       statusEl.textContent = 'Saved ✓';
       statusEl.className = 'save-status ok';
-      const statusCell = tr.children[3];
-      statusCell.innerHTML = statusPill(merchant.status);
+      const statusCell = tr.querySelector('[data-role="status-cell"]');
+      if (statusCell) statusCell.innerHTML = statusPill(merchant.status);
       toast('Feedback saved', 'success');
     } catch (err) {
       statusEl.textContent = 'Failed to save';

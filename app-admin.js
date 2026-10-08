@@ -96,7 +96,7 @@
         <div class="card-body">
           <div class="table-wrap">
             <table class="data-table">
-              <thead><tr><th>Week</th><th>RM</th><th>MID</th><th>Merchant Name</th><th class="num">Value/Worth</th><th>Service Type</th><th>Current Rate</th><th>Status</th><th>Feedback</th><th>Updated</th></tr></thead>
+              <thead><tr><th>Week</th><th>RM</th><th>MID</th><th>Merchant Name</th><th class="num">Value/Worth</th><th>Service Type</th><th>Current Rate</th><th>Contact 1</th><th>Contact 2</th><th>Contact 3</th><th>Status</th><th>Feedback</th><th>Updated</th></tr></thead>
               <tbody id="m-tbody"></tbody>
             </table>
           </div>
@@ -153,6 +153,9 @@
           <td class="num">${fmtMoney(m.value_worth)}</td>
           <td>${escapeHtml(m.service_type) || '<span class="muted">—</span>'}</td>
           <td>${escapeHtml(m.current_rate) || '<span class="muted">—</span>'}</td>
+          <td class="muted" style="white-space:nowrap;">${escapeHtml(m.contact_1) || '—'}</td>
+          <td class="muted" style="white-space:nowrap;">${escapeHtml(m.contact_2) || '—'}</td>
+          <td class="muted" style="white-space:nowrap;">${escapeHtml(m.contact_3) || '—'}</td>
           <td>${m.status === 'COMPLETED' ? '<span class="pill completed">● Completed</span>' : '<span class="pill pending">● Pending</span>'}</td>
           <td style="max-width:260px; white-space:pre-wrap;">${escapeHtml(m.feedback) || '<span class="muted">—</span>'}</td>
           <td class="muted" style="font-size:11.5px; white-space:nowrap;">${m.feedback_updated_at ? fmtDate(m.feedback_updated_at) : '—'}</td>
@@ -275,7 +278,7 @@
       </div>
       <div class="table-wrap">
         <table class="data-table">
-          <thead><tr><th>MID</th><th>Merchant</th><th>RM</th><th class="num">Value</th><th>Service Type</th><th>Current Rate</th><th>Status</th><th>Feedback</th><th>Updated</th></tr></thead>
+          <thead><tr><th>MID</th><th>Merchant</th><th>RM</th><th class="num">Value</th><th>Service Type</th><th>Current Rate</th><th>Contact 1</th><th>Contact 2</th><th>Contact 3</th><th>Status</th><th>Feedback</th><th>Updated</th></tr></thead>
           <tbody>
             ${merchantsRes.merchants
               .map(
@@ -286,6 +289,9 @@
                   <td class="num">${fmtMoney(m.value_worth)}</td>
                   <td>${escapeHtml(m.service_type) || '<span class="muted">—</span>'}</td>
                   <td>${escapeHtml(m.current_rate) || '<span class="muted">—</span>'}</td>
+                  <td class="muted" style="white-space:nowrap;">${escapeHtml(m.contact_1) || '—'}</td>
+                  <td class="muted" style="white-space:nowrap;">${escapeHtml(m.contact_2) || '—'}</td>
+                  <td class="muted" style="white-space:nowrap;">${escapeHtml(m.contact_3) || '—'}</td>
                   <td>${m.status === 'COMPLETED' ? '<span class="pill completed">● Completed</span>' : '<span class="pill pending">● Pending</span>'}</td>
                   <td style="max-width:240px; white-space:pre-wrap;">${escapeHtml(m.feedback) || '<span class="muted">—</span>'}</td>
                   <td class="muted" style="font-size:11.5px;">${m.feedback_updated_at ? fmtDate(m.feedback_updated_at) : '—'}</td>
@@ -445,7 +451,7 @@
           <div class="field">
             <label>Merchant file (.xlsx or .csv)</label>
             <input type="file" id="up-file" accept=".csv,.xlsx" />
-            <div class="help-text">Expected columns: <b>RM</b>, <b>MID</b>, <b>Merchant Name</b>, <b>Value/Worth</b>, <b>Service Type</b>, <b>Current Rate</b>. RM names are matched to existing user accounts automatically — anything that doesn't match stays unassigned so you can assign it manually. Uploaded the wrong file? You can delete the whole batch afterward from <a href="/admin/history">Weekly History</a>.</div>
+            <div class="help-text">Expected columns: <b>RM</b>, <b>MID</b>, <b>Merchant Name</b>, <b>Value/Worth</b>, <b>Service Type</b>, <b>Current Rate</b>, <b>Contact No. 1</b>, <b>Contact No. 2</b>, <b>Contact No. 3</b>. RM names are matched to existing user accounts automatically — anything that doesn't match stays unassigned so you can assign it manually. Uploaded the wrong file? You can delete the whole batch afterward from <a href="/admin/history">Weekly History</a>.</div>
           </div>
           <button class="btn" id="up-submit">Upload &amp; create weekly batch</button>
           <div id="up-result" style="margin-top:18px;"></div>
