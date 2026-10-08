@@ -144,13 +144,62 @@
     }
   }
 
+  // The merchant list auto-refreshes every 20s so new assignments show up
+  // without a manual reload — but that rebuilds the whole page from scratch.
+  // Without this, anyone who spends more than 20s writing a feedback note
+  // (gets interrupted, pauses to think) would see it silently wiped out from
+  // under them before they click Save. We snapshot any in-progress, unsaved
+  // typing (and the status filter) before refreshing, then put it straight
+  // back — including cursor position and focus — right after.
+  function captureUnsavedState() {
+    const unsavedText = {};
+    document.querySelectorAll('#merchant-tbody tr').forEach((tr) => {
+      const id = tr.getAttribute('data-id');
+      const ta = tr.querySelector('textarea');
+      if (!ta) return;
+      const original = merchants.find((m) => String(m.id) === id);
+      const savedValue = original ? original.feedback : '';
+      if (ta.value !== savedValue) {
+        unsavedText[id] = {
+          value: ta.value,
+          focused: document.activeElement === ta,
+          selStart: ta.selectionStart,
+          selEnd: ta.selectionEnd,
+        };
+      }
+    });
+    return {
+      unsavedText,
+      statusFilter: document.getElementById('status-filter')?.value || '',
+    };
+  }
+
+  function restoreUnsavedState(snapshot) {
+    if (snapshot.statusFilter) {
+      const sf = document.getElementById('status-filter');
+      if (sf) { sf.value = snapshot.statusFilter; renderRows(); }
+    }
+    Object.entries(snapshot.unsavedText).forEach(([id, info]) => {
+      const tr = document.querySelector(`#merchant-tbody tr[data-id="${id}"]`);
+      const ta = tr && tr.querySelector('textarea');
+      if (!ta) return; // merchant no longer in the filtered view — nothing to restore into
+      ta.value = info.value;
+      if (info.focused) {
+        ta.focus();
+        try { ta.setSelectionRange(info.selStart, info.selEnd); } catch (e) { /* ignore */ }
+      }
+    });
+  }
+
   async function load() {
     try {
       const batchId = document.getElementById('batch-filter')?.value || '';
       const qs = batchId ? ('?batchId=' + encodeURIComponent(batchId)) : '';
       const data = await api('/api/merchants' + qs);
+      const snapshot = captureUnsavedState();
       merchants = data.merchants;
       render();
+      restoreUnsavedState(snapshot);
     } catch (err) {
       root.innerHTML = `<div class="empty-state">Could not load your merchants: ${escapeHtml(err.message)}</div>`;
     }
