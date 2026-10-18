@@ -16,16 +16,17 @@ function page({ title, user, activeNav, bodyHtml, script }) {
             ['history', '/admin/history', 'Weekly History'],
             ['rms', '/admin/rms', 'RM Management'],
             ['upload', '/admin/upload', 'Weekly Upload'],
+            ['explore', '/explore', 'Explore & Download Feedback'],
           ],
         },
         {
           label: 'Merchant Tracking',
-          items: [['tracking', '/tracking', 'Tracking Dashboard'], ['explore', '/explore', 'Explore the Update']],
+          items: [['tracking', '/tracking', 'Tracking Dashboard']],
         },
       ]
     : [
-        { label: 'Reactivation', items: [['dashboard', '/rm', 'My Merchants']] },
-        { label: 'Merchant Tracking', items: [['tracking', '/tracking', 'My Tracking'], ['explore', '/explore', 'Explore the Update']] },
+        { label: 'Reactivation', items: [['dashboard', '/rm', 'My Merchants'], ['explore', '/explore', 'Explore & Download Feedback']] },
+        { label: 'Merchant Tracking', items: [['tracking', '/tracking', 'My Tracking']] },
       ];
 
   const navHtml = navGroups

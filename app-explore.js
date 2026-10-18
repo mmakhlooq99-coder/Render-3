@@ -1,119 +1,97 @@
 (function () {
   const root = document.getElementById('page-root');
-  let isAdmin = false, batches = [], batchId = null, merchants = [], changes = null;
-  let rmId = '', prio = 'All', view = 'all', sortMode = 'priority', search = '';
-  const act = (p) => (p === 'Urgent' ? 'Call today' : p === 'Watch' ? 'Call this week' : 'Monitor');
-  const rank = { Urgent: 0, Watch: 1, Recent: 2 };
+  let isAdmin = false, batches = [], rows = [];
+  let batchId = '', rmId = '', status = '', search = '', fbOnly = false;
 
   async function init() {
     let me;
     try { me = await api('/api/me'); } catch (e) { return; }
     isAdmin = me.role === 'ADMIN';
-    batches = (await api('/api/tracking/batches')).batches;
-    if (!batches.length) { root.innerHTML = '<div class="card"><div class="card-body"><div class="empty-state">No updates uploaded yet. Upload a snapshot in Merchant Tracking first.</div></div></div>'; return; }
-    batchId = batches[0].id;
-    await load();
+    await load(true);
   }
 
-  async function load() {
-    const [m, c] = await Promise.all([
-      api('/api/tracking/merchants?batchId=' + batchId),
-      api('/api/explore/changes?batchId=' + batchId),
-    ]);
-    merchants = m.merchants; changes = c; rmId = ''; prio = 'All'; view = 'all'; search = '';
+  async function load(first) {
+    const qs = new URLSearchParams();
+    if (batchId) qs.set('batchId', batchId);
+    if (rmId) qs.set('rmId', rmId);
+    if (status) qs.set('status', status);
+    const d = await api('/api/explore/feedback?' + qs);
+    batches = d.batches; rows = d.merchants;
+    if (first && batches.length) batchId = String(batches[0].id);
+    if (first) return load(false);
     shell(); draw();
   }
 
-  const newSet = () => new Set(changes.newMids), worseSet = () => new Set(changes.worsenedMids);
-
-  function shell() {
-    const b = batches.find((x) => x.id === batchId);
-    root.innerHTML = `
-      <div class="toolbar">
-        <select id="ex-batch">${batches.map((x) => `<option value="${x.id}" ${x.id === batchId ? 'selected' : ''}>${escapeHtml(x.date_label)} — ${escapeHtml(x.range_label)}</option>`).join('')}</select>
-        <input id="ex-search" type="search" placeholder="Search merchant name or MID…" style="flex:1;min-width:200px;">
-      </div>
-      <div class="stats-grid" id="ex-stats"></div>
-      <div class="card" style="margin-bottom:18px;"><div class="card-header"><h3>What changed ${changes.previous ? 'since ' + escapeHtml(changes.previous.date_label) : ''}</h3></div>
-        <div class="card-body" id="ex-changes"></div></div>
-      ${isAdmin ? '<div class="rm-pick-grid" id="ex-rms"></div>' : ''}
-      <div class="card">
-        <div class="card-header"><h3>${escapeHtml(b.date_label)} update</h3>
-          <select id="ex-sort"><option value="priority">Sort: Urgency</option><option value="value">Sort: Value at risk</option><option value="days">Sort: Days inactive</option><option value="name">Sort: Merchant name</option></select></div>
-        <div class="card-body">
-          <div class="chip-row" id="ex-chips">${['All', 'Urgent', 'Watch', 'Recent'].map((p) => `<button class="chip" data-p="${p}">${p}</button>`).join('')}</div>
-          <div class="chip-row" id="ex-views">
-            <button class="chip" data-v="all" data-p="All">All merchants</button>
-            <button class="chip" data-v="new" data-p="Urgent">New today</button>
-            <button class="chip" data-v="worse" data-p="Watch">Got worse</button>
-          </div>
-          <div class="table-wrap"><table class="data-table stack-mobile"><thead><tr>
-            <th>Priority</th><th>MID</th><th>Merchant</th>${isAdmin ? '<th>RM</th>' : ''}<th>Last Active</th><th class="num">Days Inactive</th><th class="num">Value at risk</th><th>Action</th>
-          </tr></thead><tbody id="ex-body"></tbody></table></div>
-          <div id="ex-empty" class="empty-state" style="display:none;">No merchants match.</div>
-        </div></div>`;
-    document.getElementById('ex-batch').onchange = async (e) => { batchId = Number(e.target.value); await load(); };
-    document.getElementById('ex-search').oninput = (e) => { search = e.target.value.trim().toLowerCase(); draw(); };
-    document.getElementById('ex-sort').onchange = (e) => { sortMode = e.target.value; draw(); };
-    document.getElementById('ex-chips').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { prio = c.dataset.p; draw(); } };
-    document.getElementById('ex-views').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { view = c.dataset.v; draw(); } };
+  function dlUrl() {
+    const qs = new URLSearchParams();
+    qs.set('batchId', batchId || 'all');
+    if (rmId) qs.set('rmId', rmId);
+    if (status) qs.set('status', status);
+    return '/api/explore/download?' + qs;
   }
 
-  function scoped() { return isAdmin && rmId ? merchants.filter((m) => String(m.rm_user_id) === rmId) : merchants; }
+  function shell() {
+    const rmNames = [...new Map(rows.filter((m) => m.rm_user_id).map((m) => [String(m.rm_user_id), m.rm_name || m.rm_name_raw])).entries()];
+    root.innerHTML = `
+      <div class="toolbar">
+        <select id="ex-batch"><option value="all" ${batchId === 'all' ? 'selected' : ''}>All weeks</option>${batches.map((b) => `<option value="${b.id}" ${String(b.id) === batchId ? 'selected' : ''}>${escapeHtml(b.label)} (${escapeHtml(b.week_start)})</option>`).join('')}</select>
+        ${isAdmin ? `<select id="ex-rm"><option value="">All RMs</option>${rmNames.map(([id, n]) => `<option value="${id}" ${id === rmId ? 'selected' : ''}>${escapeHtml(n)}</option>`).join('')}</select>` : ''}
+        <select id="ex-status"><option value="">All status</option><option value="COMPLETED" ${status === 'COMPLETED' ? 'selected' : ''}>Completed (has feedback)</option><option value="PENDING" ${status === 'PENDING' ? 'selected' : ''}>Pending (no feedback)</option></select>
+        <input id="ex-search" type="search" placeholder="Search merchant, MID or feedback…" style="flex:1;min-width:200px;" value="${escapeHtml(search)}">
+        <a class="btn" id="ex-dl" href="#">⬇ Download Excel (CSV)</a>
+      </div>
+      <div class="stats-grid" id="ex-stats"></div>
+      ${isAdmin ? '<div class="rm-pick-grid" id="ex-rms"></div>' : ''}
+      <div class="card"><div class="card-header"><h3>Reactivation feedback</h3></div><div class="card-body">
+        <div class="table-wrap"><table class="data-table stack-mobile"><thead><tr>
+          <th>Status</th><th>Week</th>${isAdmin ? '<th>RM</th>' : ''}<th>MID</th><th>Merchant</th><th class="num">Value</th><th>Feedback</th><th>Updated</th>
+        </tr></thead><tbody id="ex-body"></tbody></table></div>
+        <div id="ex-empty" class="empty-state" style="display:none;">No merchants match.</div>
+      </div></div>`;
+    const reload = async () => { await load(false); };
+    document.getElementById('ex-batch').onchange = (e) => { batchId = e.target.value; rmId = ''; reload(); };
+    const rs = document.getElementById('ex-rm'); if (rs) rs.onchange = (e) => { rmId = e.target.value; reload(); };
+    document.getElementById('ex-status').onchange = (e) => { status = e.target.value; reload(); };
+    document.getElementById('ex-search').oninput = (e) => { search = e.target.value.trim().toLowerCase(); draw(); };
+    document.getElementById('ex-dl').onclick = (e) => { e.preventDefault(); window.location.href = dlUrl(); };
+  }
+
+  function visible() {
+    if (!search) return rows;
+    return rows.filter((m) => [m.merchant_name, m.mid, m.feedback, m.rm_name].some((v) => String(v || '').toLowerCase().includes(search)));
+  }
 
   function draw() {
-    const src = scoped(), ns = newSet(), ws = worseSet();
-    const sum = (a) => a.reduce((s, m) => s + (m.grand_total || 0), 0);
+    const v = visible();
+    const done = v.filter((m) => m.status === 'COMPLETED').length;
+    const val = (a) => a.reduce((s, m) => s + (m.value_worth || 0), 0);
     document.getElementById('ex-stats').innerHTML = `
-      <div class="stat-card"><div class="label">Merchants</div><div class="value">${src.length}</div></div>
-      <div class="stat-card"><div class="label">Urgent</div><div class="value" style="color:var(--danger)">${src.filter((m) => m.priority === 'Urgent').length}</div></div>
-      <div class="stat-card"><div class="label">New today</div><div class="value warning">${src.filter((m) => ns.has(String(m.mid))).length}</div></div>
-      <div class="stat-card"><div class="label">Value at risk</div><div class="value">${fmtMoney(sum(src))}</div></div>`;
-
-    const ch = document.getElementById('ex-changes');
-    if (!changes.previous) ch.innerHTML = '<div class="muted">This is the first update — nothing to compare with yet.</div>';
-    else {
-      ch.innerHTML = `<div class="stats-grid" style="margin-bottom:12px;">
-        <div class="stat-card"><div class="label">Newly inactive</div><div class="value warning">${changes.newMids.length}</div></div>
-        <div class="stat-card"><div class="label">Got worse</div><div class="value" style="color:var(--danger)">${changes.worsenedMids.length}</div></div>
-        <div class="stat-card"><div class="label">Back to active</div><div class="value success">${changes.recovered.length}</div></div></div>
-        ${changes.recovered.length ? `<div class="muted" style="font-size:12.5px;"><b>Back to active:</b> ${changes.recovered.slice(0, 12).map((r) => escapeHtml(r.merchant_name)).join(', ')}${changes.recovered.length > 12 ? ' … +' + (changes.recovered.length - 12) + ' more' : ''}</div>` : ''}`;
-    }
+      <div class="stat-card"><div class="label">Merchants</div><div class="value">${v.length}</div></div>
+      <div class="stat-card"><div class="label">Feedback received</div><div class="value success">${done}</div></div>
+      <div class="stat-card"><div class="label">Pending</div><div class="value warning">${v.length - done}</div></div>
+      <div class="stat-card"><div class="label">Completion</div><div class="value">${v.length ? Math.round((done / v.length) * 100) : 0}%</div></div>
+      <div class="stat-card"><div class="label">Value pending</div><div class="value">${fmtMoney(val(v.filter((m) => m.status !== 'COMPLETED')))}</div></div>`;
 
     if (isAdmin) {
       const g = {};
-      merchants.forEach((m) => { const k = m.rm_user_id ?? ''; (g[k] = g[k] || { n: m.rm_name || 'Unassigned', t: 0, u: 0, v: 0, nw: 0 }); g[k].t++; if (m.priority === 'Urgent') g[k].u++; if (ns.has(String(m.mid))) g[k].nw++; g[k].v += m.grand_total || 0; });
+      rows.forEach((m) => { const k = m.rm_user_id ?? ''; const r = (g[k] = g[k] || { n: m.rm_name || m.rm_name_raw || 'Unassigned', t: 0, d: 0 }); r.t++; if (m.status === 'COMPLETED') r.d++; });
       const el = document.getElementById('ex-rms');
-      el.innerHTML = Object.entries(g).sort((a, b) => b[1].v - a[1].v).map(([k, r]) => `
-        <button class="rm-pick-card ${String(k) === rmId ? 'active' : ''}" data-rm="${k}"><div class="name">${escapeHtml(r.n)}</div>
-        <div class="row"><span>Accounts</span><b>${r.t}</b></div><div class="row"><span>Urgent</span><b class="urgent-tag">${r.u}</b></div>
-        <div class="row"><span>New today</span><b>${r.nw}</b></div><div class="row"><span>Value</span><b>${fmtMoney(r.v)}</b></div></button>`).join('');
-      el.querySelectorAll('.rm-pick-card').forEach((b) => b.onclick = () => { const k = b.dataset.rm; rmId = rmId === k ? '' : k; draw(); });
+      el.innerHTML = Object.entries(g).sort((a, b) => a[1].d / a[1].t - b[1].d / b[1].t).map(([k, r]) => `
+        <div class="rm-pick-card"><div class="name">${escapeHtml(r.n)}</div>
+        <div class="row"><span>Merchants</span><b>${r.t}</b></div><div class="row"><span>Feedback given</span><b>${r.d}</b></div>
+        <div class="row"><span>Completion</span><b>${Math.round((r.d / r.t) * 100)}%</b></div></div>`).join('');
     }
 
-    document.querySelectorAll('#ex-chips .chip').forEach((c) => c.classList.toggle('active', c.dataset.p === prio));
-    document.querySelectorAll('#ex-views .chip').forEach((c) => c.classList.toggle('active', c.dataset.v === view));
-
-    let rows = src.slice();
-    if (prio !== 'All') rows = rows.filter((m) => m.priority === prio);
-    if (view === 'new') rows = rows.filter((m) => ns.has(String(m.mid)));
-    if (view === 'worse') rows = rows.filter((m) => ws.has(String(m.mid)));
-    if (search) rows = rows.filter((m) => (m.merchant_name || '').toLowerCase().includes(search) || String(m.mid).toLowerCase().includes(search));
-    rows.sort((a, b) => sortMode === 'value' ? (b.grand_total || 0) - (a.grand_total || 0)
-      : sortMode === 'days' ? (b.days_inactive || 0) - (a.days_inactive || 0)
-      : sortMode === 'name' ? String(a.merchant_name).localeCompare(String(b.merchant_name))
-      : (rank[a.priority] - rank[b.priority]) || (b.grand_total || 0) - (a.grand_total || 0));
-
-    const body = document.getElementById('ex-body'), empty = document.getElementById('ex-empty');
-    empty.style.display = rows.length ? 'none' : 'block';
-    body.innerHTML = rows.map((m) => `<tr>
-      <td data-label="Priority"><span class="pill ${m.priority.toLowerCase()}">${m.priority}</span>${ns.has(String(m.mid)) ? ' <span class="pill pending">NEW</span>' : ws.has(String(m.mid)) ? ' <span class="pill urgent">▲</span>' : ''}</td>
+    const body = document.getElementById('ex-body');
+    document.getElementById('ex-empty').style.display = v.length ? 'none' : 'block';
+    body.innerHTML = v.map((m) => `<tr>
+      <td data-label="Status"><span class="pill ${m.status === 'COMPLETED' ? 'completed' : 'pending'}">${m.status === 'COMPLETED' ? 'Completed' : 'Pending'}</span></td>
+      <td data-label="Week">${escapeHtml(m.batch_label)}</td>
+      ${isAdmin ? `<td data-label="RM">${escapeHtml(m.rm_name || m.rm_name_raw || 'Unassigned')}</td>` : ''}
       <td data-label="MID">${escapeHtml(m.mid)}</td><td data-label="Merchant">${escapeHtml(m.merchant_name)}</td>
-      ${isAdmin ? `<td data-label="RM">${escapeHtml(m.rm_name || 'Unassigned')}</td>` : ''}
-      <td data-label="Last Active">${escapeHtml(m.last_active_label) || '—'}</td>
-      <td class="num" data-label="Days Inactive">${m.days_inactive ?? '—'}</td>
-      <td class="num" data-label="Value at risk">${fmtMoney(m.grand_total)}</td>
-      <td data-label="Action" class="muted" style="font-size:12.5px;white-space:nowrap;">${act(m.priority)}</td></tr>`).join('');
+      <td class="num" data-label="Value">${fmtMoney(m.value_worth)}</td>
+      <td data-label="Feedback" style="max-width:340px;white-space:pre-wrap;">${escapeHtml(m.feedback) || '<span class="muted">—</span>'}</td>
+      <td data-label="Updated" class="muted" style="font-size:12.5px;white-space:nowrap;">${escapeHtml(m.feedback_updated_at || '')}</td></tr>`).join('');
   }
   init();
 })();
