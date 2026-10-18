@@ -20,12 +20,12 @@ function page({ title, user, activeNav, bodyHtml, script }) {
         },
         {
           label: 'Merchant Tracking',
-          items: [['tracking', '/tracking', 'Tracking Dashboard']],
+          items: [['tracking', '/tracking', 'Tracking Dashboard'], ['explore', '/explore', 'Explore the Update']],
         },
       ]
     : [
         { label: 'Reactivation', items: [['dashboard', '/rm', 'My Merchants']] },
-        { label: 'Merchant Tracking', items: [['tracking', '/tracking', 'My Tracking']] },
+        { label: 'Merchant Tracking', items: [['tracking', '/tracking', 'My Tracking'], ['explore', '/explore', 'Explore the Update']] },
       ];
 
   const navHtml = navGroups
