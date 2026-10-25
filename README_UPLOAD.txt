@@ -1,10 +1,14 @@
-OUTCOME DROPDOWN + OUTCOME FILTER + SEARCH (replaces the earlier zip - same 7 files, updated)
+ALL UPDATES IN ONE PACKAGE (replaces the earlier zips)
+Upload ALL 12 .js files into the "src" folder on GitHub (same folder as server.js), replacing old ones:
+  NEW:     duplicates-api.js, app-duplicates.js
+  CHANGED: server.js, pages.js, layout.js, db.js, queries.js, api.js, app-rm.js, app-admin.js, app-explore.js, explore-api.js
 
-Upload these 7 files into the "src" folder on GitHub (same folder as server.js), replacing the old ones:
-  db.js, queries.js, api.js, app-rm.js, app-admin.js, app-explore.js, explore-api.js
+What you get:
+  - Outcome dropdown + feedback box (Resigned / Prospect / Using Another MID / Sijil Close or Deleted)
+  - Outcome filter + search (RM page and Admin > All Merchants)
+  - Explore & Download Feedback page (CSV includes Outcome)
+  - Admin > Duplicate MIDs: find duplicates, see every detail (name, contacts, rate, feedback),
+    delete one copy, keep-suggested per MID, or clean all (backup CSV downloads first)
 
-New in this version:
-  RM page: search box + "All outcomes" filter (Resigned / Prospect / Using Another MID / Sijil Close or Deleted / No outcome yet)
-  Admin > All Merchants: "Search anything" box + same outcome filter
-
-Your data is safe: db.js only ADDS one empty column (feedback_category). Nothing is deleted or rewritten.
+Data safety: the only database change is ONE new empty column (feedback_category). Nothing is deleted on deploy.
+Duplicates are only deleted when an admin clicks Delete / Clean and confirms.

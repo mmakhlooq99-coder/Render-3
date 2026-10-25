@@ -17,6 +17,7 @@ function page({ title, user, activeNav, bodyHtml, script }) {
             ['rms', '/admin/rms', 'RM Management'],
             ['upload', '/admin/upload', 'Weekly Upload'],
             ['explore', '/explore', 'Explore & Download Feedback'],
+            ['duplicates', '/admin/duplicates', 'Duplicate MIDs'],
           ],
         },
         {

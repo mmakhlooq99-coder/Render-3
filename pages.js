@@ -41,6 +41,12 @@ function register(router) {
   router.get('/admin/rms', async (req, res) => adminPage(req, res, { title: 'RM Management', activeNav: 'rms', dataPage: 'rms' }));
   router.get('/admin/upload', async (req, res) => adminPage(req, res, { title: 'Weekly Upload', activeNav: 'upload', dataPage: 'upload' }));
 
+  router.get('/admin/duplicates', async (req, res) => {
+    if (!req.user) { res.writeHead(302, { Location: '/login' }); res.end(); return; }
+    if (req.user.role !== 'ADMIN') { res.writeHead(302, { Location: '/rm' }); res.end(); return; }
+    sendHtml(res, 200, page({ title: 'Duplicate MIDs', user: req.user, activeNav: 'duplicates', bodyHtml: '<div id="page-root" data-page="duplicates"></div>', script: '/static/app-duplicates.js' }));
+  });
+
   // ---------- Explore the Update ----------
   router.get('/explore', async (req, res) => {
     if (!req.user) { res.writeHead(302, { Location: '/login' }); res.end(); return; }
