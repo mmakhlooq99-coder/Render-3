@@ -143,7 +143,7 @@ function listMerchants(filters = {}) {
   return db.prepare(sql).all(...vals);
 }
 
-function updateMerchantFeedback(id, feedback, { allowUserId = null, isAdmin = false } = {}) {
+function updateMerchantFeedback(id, feedback, { allowUserId = null, isAdmin = false, category } = {}) {
   const merchant = db.prepare('SELECT * FROM merchants WHERE id = ?').get(id);
   if (!merchant) return null;
   if (!isAdmin && allowUserId != null && merchant.rm_user_id !== allowUserId) {
@@ -151,10 +151,12 @@ function updateMerchantFeedback(id, feedback, { allowUserId = null, isAdmin = fa
     err.statusCode = 403;
     throw err;
   }
-  const status = feedback && feedback.trim().length > 0 ? 'COMPLETED' : 'PENDING';
+  // category === undefined -> keep what is stored (older clients that only send text)
+  const cat = category === undefined ? (merchant.feedback_category || '') : category;
+  const status = (feedback && feedback.trim().length > 0) || cat ? 'COMPLETED' : 'PENDING';
   db.prepare(
-    `UPDATE merchants SET feedback = ?, status = ?, feedback_updated_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`
-  ).run(feedback, status, id);
+    `UPDATE merchants SET feedback = ?, feedback_category = ?, status = ?, feedback_updated_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`
+  ).run(feedback, cat, status, id);
   return getMerchantById(id);
 }
 

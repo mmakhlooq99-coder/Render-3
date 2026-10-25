@@ -96,7 +96,7 @@
         <div class="card-body">
           <div class="table-wrap">
             <table class="data-table">
-              <thead><tr><th>Week</th><th>RM</th><th>MID</th><th>Merchant Name</th><th class="num">Value/Worth</th><th>Service Type</th><th>Current Rate</th><th>Contact 1</th><th>Contact 2</th><th>Contact 3</th><th>Status</th><th>Feedback</th><th>Updated</th></tr></thead>
+              <thead><tr><th>Week</th><th>RM</th><th>MID</th><th>Merchant Name</th><th class="num">Value/Worth</th><th>Service Type</th><th>Current Rate</th><th>Contact 1</th><th>Contact 2</th><th>Contact 3</th><th>Status</th><th>Outcome</th><th>Feedback</th><th>Updated</th></tr></thead>
               <tbody id="m-tbody"></tbody>
             </table>
           </div>
@@ -157,6 +157,7 @@
           <td class="muted" style="white-space:nowrap;">${escapeHtml(m.contact_2) || '—'}</td>
           <td class="muted" style="white-space:nowrap;">${escapeHtml(m.contact_3) || '—'}</td>
           <td>${m.status === 'COMPLETED' ? '<span class="pill completed">● Completed</span>' : '<span class="pill pending">● Pending</span>'}</td>
+          <td style="white-space:nowrap;">${escapeHtml(m.feedback_category) || '<span class="muted">—</span>'}</td>
           <td style="max-width:260px; white-space:pre-wrap;">${escapeHtml(m.feedback) || '<span class="muted">—</span>'}</td>
           <td class="muted" style="font-size:11.5px; white-space:nowrap;">${m.feedback_updated_at ? fmtDate(m.feedback_updated_at) : '—'}</td>
         </tr>
@@ -278,7 +279,7 @@
       </div>
       <div class="table-wrap">
         <table class="data-table">
-          <thead><tr><th>MID</th><th>Merchant</th><th>RM</th><th class="num">Value</th><th>Service Type</th><th>Current Rate</th><th>Contact 1</th><th>Contact 2</th><th>Contact 3</th><th>Status</th><th>Feedback</th><th>Updated</th></tr></thead>
+          <thead><tr><th>MID</th><th>Merchant</th><th>RM</th><th class="num">Value</th><th>Service Type</th><th>Current Rate</th><th>Contact 1</th><th>Contact 2</th><th>Contact 3</th><th>Status</th><th>Outcome</th><th>Feedback</th><th>Updated</th></tr></thead>
           <tbody>
             ${merchantsRes.merchants
               .map(
@@ -293,6 +294,7 @@
                   <td class="muted" style="white-space:nowrap;">${escapeHtml(m.contact_2) || '—'}</td>
                   <td class="muted" style="white-space:nowrap;">${escapeHtml(m.contact_3) || '—'}</td>
                   <td>${m.status === 'COMPLETED' ? '<span class="pill completed">● Completed</span>' : '<span class="pill pending">● Pending</span>'}</td>
+                  <td style="white-space:nowrap;">${escapeHtml(m.feedback_category) || '<span class="muted">—</span>'}</td>
                   <td style="max-width:240px; white-space:pre-wrap;">${escapeHtml(m.feedback) || '<span class="muted">—</span>'}</td>
                   <td class="muted" style="font-size:11.5px;">${m.feedback_updated_at ? fmtDate(m.feedback_updated_at) : '—'}</td>
                 </tr>`

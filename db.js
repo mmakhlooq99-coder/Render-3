@@ -115,4 +115,8 @@ if (!merchantCols.includes('contact_3')) {
   db.exec("ALTER TABLE merchants ADD COLUMN contact_3 TEXT NOT NULL DEFAULT ''");
 }
 
+if (!merchantCols.includes('feedback_category')) {
+  db.exec("ALTER TABLE merchants ADD COLUMN feedback_category TEXT NOT NULL DEFAULT ''");
+}
+
 module.exports = db;

@@ -3,6 +3,8 @@
   let merchants = [];
   let pollTimer = null;
 
+  const OUTCOMES = ['Resigned', 'Prospect', 'Using Another MID', 'Sijil Close or Deleted'];
+
   function statusPill(status) {
     return status === 'COMPLETED'
       ? '<span class="pill completed">● Completed</span>'
@@ -37,7 +39,7 @@
           <div class="table-wrap">
             <table class="data-table stack-mobile" id="merchant-table">
               <thead>
-                <tr><th>MID</th><th>Merchant Name</th><th class="num">Value/Worth</th><th>Service Type</th><th>Current Rate</th><th>Contact 1</th><th>Contact 2</th><th>Contact 3</th><th>Status</th><th style="min-width:280px;">Feedback</th><th></th></tr>
+                <tr><th>MID</th><th>Merchant Name</th><th class="num">Value/Worth</th><th>Service Type</th><th>Current Rate</th><th>Contact 1</th><th>Contact 2</th><th>Contact 3</th><th>Status</th><th style="min-width:280px;">Outcome &amp; Feedback</th><th></th></tr>
               </thead>
               <tbody id="merchant-tbody"></tbody>
             </table>
@@ -95,6 +97,10 @@
         <td data-label="Contact 3">${escapeHtml(m.contact_3) || '<span class="muted">—</span>'}</td>
         <td data-label="Status" data-role="status-cell">${statusPill(m.status)}</td>
         <td class="feedback-cell" data-label="Feedback">
+          <select class="outcome-select" aria-label="Outcome" style="width:100%; margin-bottom:6px;">
+            <option value="">Select outcome…</option>
+            ${OUTCOMES.map((o) => `<option value="${o}" ${m.feedback_category === o ? 'selected' : ''}>${o}</option>`).join('')}
+          </select>
           <textarea placeholder="Write feedback here…">${escapeHtml(m.feedback)}</textarea>
           <div class="feedback-save-row">
             <span class="save-status" data-role="status"></span>
@@ -110,23 +116,24 @@
     tbody.querySelectorAll('tr').forEach((tr) => {
       const id = tr.getAttribute('data-id');
       const textarea = tr.querySelector('textarea');
+      const select = tr.querySelector('.outcome-select');
       const btn = tr.querySelector('.save-btn');
       const statusEl = tr.querySelector('[data-role="status"]');
-      btn.addEventListener('click', () => saveFeedback(id, textarea.value, btn, statusEl, tr));
+      btn.addEventListener('click', () => saveFeedback(id, textarea.value, select.value, btn, statusEl, tr));
       textarea.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') saveFeedback(id, textarea.value, btn, statusEl, tr);
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') saveFeedback(id, textarea.value, select.value, btn, statusEl, tr);
       });
     });
   }
 
-  async function saveFeedback(id, feedback, btn, statusEl, tr) {
+  async function saveFeedback(id, feedback, category, btn, statusEl, tr) {
     btn.disabled = true;
     const original = btn.textContent;
     btn.innerHTML = '<span class="spinner"></span>';
     statusEl.textContent = '';
     statusEl.className = 'save-status';
     try {
-      const { merchant } = await api('/api/merchants/' + id, { method: 'PUT', body: { feedback } });
+      const { merchant } = await api('/api/merchants/' + id, { method: 'PUT', body: { feedback, category } });
       const idx = merchants.findIndex((m) => String(m.id) === String(id));
       if (idx !== -1) merchants[idx] = merchant;
       statusEl.textContent = 'Saved ✓';
@@ -159,9 +166,12 @@
       if (!ta) return;
       const original = merchants.find((m) => String(m.id) === id);
       const savedValue = original ? original.feedback : '';
-      if (ta.value !== savedValue) {
+      const sel = tr.querySelector('.outcome-select');
+      const savedCat = original ? (original.feedback_category || '') : '';
+      if (ta.value !== savedValue || (sel && sel.value !== savedCat)) {
         unsavedText[id] = {
           value: ta.value,
+          category: sel ? sel.value : '',
           focused: document.activeElement === ta,
           selStart: ta.selectionStart,
           selEnd: ta.selectionEnd,
@@ -184,6 +194,8 @@
       const ta = tr && tr.querySelector('textarea');
       if (!ta) return; // merchant no longer in the filtered view — nothing to restore into
       ta.value = info.value;
+      const sel = tr.querySelector('.outcome-select');
+      if (sel && info.category !== undefined) sel.value = info.category;
       if (info.focused) {
         ta.focus();
         try { ta.setSelectionRange(info.selStart, info.selEnd); } catch (e) { /* ignore */ }

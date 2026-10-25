@@ -44,7 +44,7 @@
       ${isAdmin ? '<div class="rm-pick-grid" id="ex-rms"></div>' : ''}
       <div class="card"><div class="card-header"><h3>Reactivation feedback</h3></div><div class="card-body">
         <div class="table-wrap"><table class="data-table stack-mobile"><thead><tr>
-          <th>Status</th><th>Week</th>${isAdmin ? '<th>RM</th>' : ''}<th>MID</th><th>Merchant</th><th class="num">Value</th><th>Feedback</th><th>Updated</th>
+          <th>Status</th><th>Week</th>${isAdmin ? '<th>RM</th>' : ''}<th>MID</th><th>Merchant</th><th class="num">Value</th><th>Outcome</th><th>Feedback</th><th>Updated</th>
         </tr></thead><tbody id="ex-body"></tbody></table></div>
         <div id="ex-empty" class="empty-state" style="display:none;">No merchants match.</div>
       </div></div>`;
@@ -58,7 +58,7 @@
 
   function visible() {
     if (!search) return rows;
-    return rows.filter((m) => [m.merchant_name, m.mid, m.feedback, m.rm_name].some((v) => String(v || '').toLowerCase().includes(search)));
+    return rows.filter((m) => [m.merchant_name, m.mid, m.feedback, m.feedback_category, m.rm_name].some((v) => String(v || '').toLowerCase().includes(search)));
   }
 
   function draw() {
@@ -90,6 +90,7 @@
       ${isAdmin ? `<td data-label="RM">${escapeHtml(m.rm_name || m.rm_name_raw || 'Unassigned')}</td>` : ''}
       <td data-label="MID">${escapeHtml(m.mid)}</td><td data-label="Merchant">${escapeHtml(m.merchant_name)}</td>
       <td class="num" data-label="Value">${fmtMoney(m.value_worth)}</td>
+      <td data-label="Outcome" style="white-space:nowrap;">${escapeHtml(m.feedback_category) || '<span class="muted">—</span>'}</td>
       <td data-label="Feedback" style="max-width:340px;white-space:pre-wrap;">${escapeHtml(m.feedback) || '<span class="muted">—</span>'}</td>
       <td data-label="Updated" class="muted" style="font-size:12.5px;white-space:nowrap;">${escapeHtml(m.feedback_updated_at || '')}</td></tr>`).join('');
   }

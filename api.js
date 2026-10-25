@@ -109,7 +109,17 @@ function register(router) {
   router.put('/api/merchants/:id', safeHandler(async (req, res, params) => {
     if (!requireAuth(req, res)) return;
     const body = await readJsonBody(req);
+    const FEEDBACK_CATEGORIES = ['Resigned', 'Prospect', 'Using Another MID', 'Sijil Close or Deleted'];
+    let category;
+    if (body.category !== undefined) {
+      category = String(body.category || '');
+      if (category && !FEEDBACK_CATEGORIES.includes(category)) {
+        sendJson(res, 400, { error: 'Invalid outcome selected' });
+        return;
+      }
+    }
     const updated = q.updateMerchantFeedback(Number(params.id), body.feedback ?? '', {
+      category,
       allowUserId: req.user.id,
       isAdmin: req.user.role === 'ADMIN',
     });

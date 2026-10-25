@@ -36,11 +36,11 @@ function register(router) {
   router.get('/api/explore/download', safe(async (req, res, params, query) => {
     if (!req.user) return sendJson(res, 401, { error: 'Not authenticated' });
     const rows = fetchRows(req, query);
-    const head = ['Batch', 'Week Start', 'RM', 'MID', 'Merchant Name', 'Value Worth', 'Status', 'Feedback', 'Feedback Updated'];
+    const head = ['Batch', 'Week Start', 'RM', 'MID', 'Merchant Name', 'Value Worth', 'Status', 'Outcome', 'Feedback', 'Feedback Updated'];
     const lines = [head.map(csvCell).join(',')];
     for (const m of rows) {
       lines.push([m.batch_label, m.batch_week_start, m.rm_name || m.rm_name_raw || 'Unassigned', m.mid, m.merchant_name,
-        m.value_worth, m.status === 'COMPLETED' ? 'Completed' : 'Pending', m.feedback, m.feedback_updated_at || ''].map(csvCell).join(','));
+        m.value_worth, m.status === 'COMPLETED' ? 'Completed' : 'Pending', m.feedback_category || '', m.feedback, m.feedback_updated_at || ''].map(csvCell).join(','));
     }
     const body = '﻿' + lines.join('\r\n'); // BOM so Excel reads Arabic/UTF-8 correctly
     res.writeHead(200, {
