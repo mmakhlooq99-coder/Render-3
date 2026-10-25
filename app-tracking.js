@@ -287,6 +287,7 @@
       try {
         const data = await api('/api/tracking/upload', { method: 'POST', body: fd });
         let html = `<div class="error-msg" style="background:var(--success-bg); color:var(--success);">Uploaded "${escapeHtml(data.batch.date_label)}" with <b>${data.inserted}</b> merchants.</div>`;
+        if (data.duplicatesRemoved) html += `<div class="error-msg" style="background:var(--warning-bg); color:var(--warning);"><b>${data.duplicatesRemoved}</b> duplicate MID row(s) in the file were removed automatically.</div>`;
         if (data.unmatchedRmNames && data.unmatchedRmNames.length) {
           html += `<div class="error-msg">These RM names didn't match any account and were left unassigned: <b>${data.unmatchedRmNames.map(escapeHtml).join(', ')}</b>.</div>`;
         }

@@ -5,6 +5,27 @@ const { parseXlsxBuffer } = require('./xlsx-reader');
 const auth = require('./auth');
 const q = require('./queries');
 
+// Removes repeated MIDs from an uploaded file: the most complete copy is kept
+// (ties: the first in the file). Rows without a MID are never treated as duplicates.
+function dedupeByMid(list, score) {
+  const norm = (m) => String(m || '').trim().replace(/^0+/, '').toLowerCase();
+  const best = new Map();
+  list.forEach((row, i) => {
+    const k = norm(row.mid);
+    if (!k) return;
+    const sc = score(row);
+    const cur = best.get(k);
+    if (!cur || sc > cur.sc) best.set(k, { i, sc });
+  });
+  const kept = [];
+  const removed = [];
+  list.forEach((row, i) => {
+    const k = norm(row.mid);
+    if (!k || best.get(k).i === i) kept.push(row); else removed.push(row);
+  });
+  return { kept, removed };
+}
+
 function requireAuth(req, res) {
   if (!req.user) {
     sendJson(res, 401, { error: 'Not authenticated' });
@@ -227,6 +248,7 @@ function register(router) {
     const batch = q.createBatch({ label, weekStart, createdBy: req.user.id });
 
     let inserted = 0;
+    const pending = [];
     const unmatchedRmNames = new Set();
     for (let i = 1; i < rows.length; i++) {
       const r = rows[i];
@@ -249,7 +271,7 @@ function register(router) {
         if (!matchedUser) unmatchedRmNames.add(rmRaw);
       }
 
-      q.insertMerchant({
+      pending.push({
         batchId: batch.id,
         rmUserId: matchedUser ? matchedUser.id : null,
         rmNameRaw: rmRaw || null,
@@ -262,12 +284,18 @@ function register(router) {
         contact2,
         contact3,
       });
-      inserted++;
     }
+
+    // Duplicate MIDs inside the uploaded file are removed automatically.
+    const { kept, removed } = dedupeByMid(pending, (m) =>
+      [m.rmNameRaw, m.serviceType, m.currentRate, m.contact1, m.contact2, m.contact3].filter((v) => v && String(v).trim()).length + (m.valueWorth ? 1 : 0));
+    kept.forEach((m) => { q.insertMerchant(m); inserted++; });
 
     sendJson(res, 200, {
       batch,
       inserted,
+      duplicatesRemoved: removed.length,
+      duplicates: removed.slice(0, 50).map((m) => ({ mid: m.mid, merchant_name: m.merchantName })),
       unmatchedRmNames: Array.from(unmatchedRmNames),
     });
   }));
@@ -419,6 +447,7 @@ function register(router) {
     const batch = q.createTrackingBatch({ dateLabel, rangeLabel, createdBy: req.user.id });
 
     let inserted = 0;
+    const pendingT = [];
     const unmatchedRmNames = new Set();
     const num = (v) => Number(String(v ?? '').replace(/[,$\s]/g, '')) || 0;
     for (let i = 1; i < rows.length; i++) {
@@ -437,7 +466,7 @@ function register(router) {
         if (!matchedUser) unmatchedRmNames.add(rmRaw);
       }
 
-      q.insertTrackingMerchant({
+      pendingT.push({
         batchId: batch.id,
         rmUserId: matchedUser ? matchedUser.id : null,
         rmNameRaw: rmRaw || null,
@@ -450,10 +479,20 @@ function register(router) {
         daysInactive: colDaysInactive !== -1 ? Math.round(num(r[colDaysInactive])) : 0,
         grandTotal: colGrandTotal !== -1 ? num(r[colGrandTotal]) : 0,
       });
-      inserted++;
     }
 
-    sendJson(res, 200, { batch, inserted, unmatchedRmNames: Array.from(unmatchedRmNames) });
+    // Duplicate MIDs inside the uploaded file are removed automatically (most complete / highest value copy is kept).
+    const { kept, removed } = dedupeByMid(pendingT, (m) =>
+      (m.rmNameRaw ? 1 : 0) + (m.lastActiveLabel ? 1 : 0) + (m.statusLabel ? 1 : 0) + (m.grandTotal || 0) / 1e12);
+    kept.forEach((m) => { q.insertTrackingMerchant(m); inserted++; });
+
+    sendJson(res, 200, {
+      batch,
+      inserted,
+      duplicatesRemoved: removed.length,
+      duplicates: removed.slice(0, 50).map((m) => ({ mid: m.mid, merchant_name: m.merchantName })),
+      unmatchedRmNames: Array.from(unmatchedRmNames),
+    });
   }));
 
   router.del('/api/tracking/batches/:id', safeHandler(async (req, res, params) => {

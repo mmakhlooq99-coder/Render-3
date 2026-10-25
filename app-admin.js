@@ -498,6 +498,11 @@
         let html = `<div class="error-msg" style="background:var(--success-bg); color:var(--success);">
           Created "${escapeHtml(data.batch.label)}" with <b>${data.inserted}</b> merchants.
         </div>`;
+        if (data.duplicatesRemoved) {
+          html += `<div class="error-msg" style="background:var(--warning-bg); color:var(--warning);">
+            <b>${data.duplicatesRemoved}</b> duplicate MID row(s) in the file were removed automatically (the most complete copy was kept).
+          </div>`;
+        }
         if (data.unmatchedRmNames && data.unmatchedRmNames.length) {
           html += `<div class="error-msg">
             These RM names in the file didn't match any user account and were left unassigned: <b>${data.unmatchedRmNames.map(escapeHtml).join(', ')}</b>.
