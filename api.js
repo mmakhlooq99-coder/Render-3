@@ -95,6 +95,8 @@ function register(router) {
       status: query.status || undefined,
       mid: query.mid || undefined,
       name: query.name || undefined,
+      category: query.category || undefined,
+      search: query.search || undefined,
       latestBatchOnly: query.latest === '1',
     };
     if (req.user.role === 'ADMIN') {

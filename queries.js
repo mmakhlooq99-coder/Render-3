@@ -129,6 +129,13 @@ function listMerchants(filters = {}) {
   if (filters.status) { where.push('m.status = ?'); vals.push(filters.status); }
   if (filters.mid) { where.push('m.mid LIKE ?'); vals.push(`%${filters.mid}%`); }
   if (filters.name) { where.push('m.merchant_name LIKE ?'); vals.push(`%${filters.name}%`); }
+  if (filters.category === '__none__') { where.push("m.feedback_category = ''"); }
+  else if (filters.category) { where.push('m.feedback_category = ?'); vals.push(filters.category); }
+  if (filters.search) {
+    const like = `%${filters.search}%`;
+    where.push(`(m.mid LIKE ? OR m.merchant_name LIKE ? OR m.feedback LIKE ? OR m.feedback_category LIKE ? OR u.name LIKE ? OR m.contact_1 LIKE ? OR m.contact_2 LIKE ? OR m.contact_3 LIKE ?)`);
+    for (let i = 0; i < 8; i++) vals.push(like);
+  }
   if (filters.latestBatchOnly) { where.push('m.batch_id = (SELECT id FROM batches ORDER BY week_start DESC, id DESC LIMIT 1)'); }
 
   const sql = `

@@ -80,6 +80,7 @@
   async function initMerchants() {
     root.innerHTML = `
       <div class="toolbar">
+        <input type="search" id="f-q" placeholder="Search anything: MID, merchant, RM, feedback…" style="min-width:260px;" />
         <input type="text" id="f-mid" placeholder="Search MID…" />
         <input type="text" id="f-name" placeholder="Search merchant name…" />
         <select id="f-rm"><option value="">All RMs</option></select>
@@ -88,6 +89,14 @@
           <option value="">All statuses</option>
           <option value="PENDING">Pending</option>
           <option value="COMPLETED">Completed</option>
+        </select>
+        <select id="f-outcome">
+          <option value="">All outcomes</option>
+          <option value="Resigned">Resigned</option>
+          <option value="Prospect">Prospect</option>
+          <option value="Using Another MID">Using Another MID</option>
+          <option value="Sijil Close or Deleted">Sijil Close or Deleted</option>
+          <option value="__none__">No outcome yet</option>
         </select>
         <div class="spacer"></div>
         <button class="btn secondary small" id="refresh-btn">Refresh</button>
@@ -122,6 +131,10 @@
       if (rmId) params.set('rmId', rmId);
       if (batchId) params.set('batchId', batchId);
       if (status) params.set('status', status);
+      const outcome = document.getElementById('f-outcome').value;
+      const qAll = document.getElementById('f-q').value.trim();
+      if (outcome) params.set('category', outcome);
+      if (qAll) params.set('search', qAll);
 
       const data = await api('/api/merchants?' + params.toString());
       renderTable(data.merchants, rms);
@@ -179,8 +192,8 @@
       });
     }
 
-    ['f-mid', 'f-name'].forEach((id) => document.getElementById(id).addEventListener('input', debounce(load, 350)));
-    ['f-rm', 'f-batch', 'f-status'].forEach((id) => document.getElementById(id).addEventListener('change', load));
+    ['f-q', 'f-mid', 'f-name'].forEach((id) => document.getElementById(id).addEventListener('input', debounce(load, 350)));
+    ['f-rm', 'f-batch', 'f-status', 'f-outcome'].forEach((id) => document.getElementById(id).addEventListener('change', load));
     document.getElementById('refresh-btn').addEventListener('click', load);
 
     await load();

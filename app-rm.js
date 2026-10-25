@@ -27,11 +27,17 @@
         <div class="card-header">
           <h3>My assigned merchants</h3>
           <div class="toolbar" style="margin:0;">
+            <input type="search" id="search-q" placeholder="Search merchant, MID, feedback…" aria-label="Search" style="min-width:230px;" />
             <select id="batch-filter"></select>
             <select id="status-filter">
               <option value="">All statuses</option>
               <option value="PENDING">Pending only</option>
               <option value="COMPLETED">Completed only</option>
+            </select>
+            <select id="outcome-filter" aria-label="Outcome">
+              <option value="">All outcomes</option>
+              ${OUTCOMES.map((o) => `<option value="${o}">${o}</option>`).join('')}
+              <option value="__none__">No outcome yet</option>
             </select>
           </div>
         </div>
@@ -50,6 +56,8 @@
     `;
 
     document.getElementById('status-filter').addEventListener('change', renderRows);
+    document.getElementById('outcome-filter').addEventListener('change', renderRows);
+    document.getElementById('search-q').addEventListener('input', renderRows);
     document.getElementById('batch-filter').addEventListener('change', load);
     populateBatchFilter();
     renderRows();
@@ -73,7 +81,18 @@
     const statusFilter = document.getElementById('status-filter')?.value || '';
     const tbody = document.getElementById('merchant-tbody');
     const emptyState = document.getElementById('empty-state');
-    const filtered = merchants.filter((m) => !statusFilter || m.status === statusFilter);
+    const outcomeFilter = document.getElementById('outcome-filter')?.value || '';
+    const term = (document.getElementById('search-q')?.value || '').trim().toLowerCase();
+    const filtered = merchants.filter((m) => {
+      if (statusFilter && m.status !== statusFilter) return false;
+      if (outcomeFilter === '__none__' ? m.feedback_category : outcomeFilter && m.feedback_category !== outcomeFilter) return false;
+      if (term) {
+        const hay = [m.mid, m.merchant_name, m.feedback, m.feedback_category, m.contact_1, m.contact_2, m.contact_3, m.service_type]
+          .map((v) => String(v || '').toLowerCase()).join(' ');
+        if (!hay.includes(term)) return false;
+      }
+      return true;
+    });
     if (!tbody) return;
 
     if (filtered.length === 0) {
@@ -181,13 +200,22 @@
     return {
       unsavedText,
       statusFilter: document.getElementById('status-filter')?.value || '',
+      outcomeFilter: document.getElementById('outcome-filter')?.value || '',
+      searchTerm: document.getElementById('search-q')?.value || '',
+      searchFocused: document.activeElement && document.activeElement.id === 'search-q',
     };
   }
 
   function restoreUnsavedState(snapshot) {
-    if (snapshot.statusFilter) {
+    {
       const sf = document.getElementById('status-filter');
-      if (sf) { sf.value = snapshot.statusFilter; renderRows(); }
+      const of = document.getElementById('outcome-filter');
+      const sq = document.getElementById('search-q');
+      if (sf && snapshot.statusFilter) sf.value = snapshot.statusFilter;
+      if (of && snapshot.outcomeFilter) of.value = snapshot.outcomeFilter;
+      if (sq && snapshot.searchTerm) sq.value = snapshot.searchTerm;
+      renderRows();
+      if (sq && snapshot.searchFocused) { sq.focus(); try { sq.setSelectionRange(sq.value.length, sq.value.length); } catch (e) { /* ignore */ } }
     }
     Object.entries(snapshot.unsavedText).forEach(([id, info]) => {
       const tr = document.querySelector(`#merchant-tbody tr[data-id="${id}"]`);
