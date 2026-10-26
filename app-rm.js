@@ -3,7 +3,7 @@
   let merchants = [];
   let pollTimer = null;
 
-  const OUTCOMES = ['Resigned', 'Prospect', 'Using Another MID', 'Sijil Close or Deleted', 'Call back / No Response'];
+  const OUTCOMES = ['Resigned', 'Prospect', 'Using Another MID', 'Sijil Close or Deleted', 'Call back / No Response', 'Termination'];
 
   function statusPill(status) {
     return status === 'COMPLETED'

@@ -97,6 +97,7 @@
           <option value="Using Another MID">Using Another MID</option>
           <option value="Sijil Close or Deleted">Sijil Close or Deleted</option>
           <option value="Call back / No Response">Call back / No Response</option>
+          <option value="Termination">Termination</option>
           <option value="__none__">No outcome yet</option>
         </select>
         <div class="spacer"></div>

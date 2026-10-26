@@ -4,7 +4,7 @@ Upload ALL 13 .js files into the "src" folder on GitHub (same folder as server.j
   CHANGED: app-tracking.js, server.js, pages.js, layout.js, db.js, queries.js, api.js, app-rm.js, app-admin.js, app-explore.js, explore-api.js
 
 What you get:
-  - Outcome dropdown + feedback box (Resigned / Prospect / Using Another MID / Sijil Close or Deleted / Call back / No Response)
+  - Outcome dropdown + feedback box (Resigned / Prospect / Using Another MID / Sijil Close or Deleted / Call back / No Response / Termination)
   - Outcome filter + search (RM page and Admin > All Merchants)
   - Explore & Download Feedback page (CSV includes Outcome)
   - Admin > Duplicate MIDs: find duplicates, see every detail (name, contacts, rate, feedback),
