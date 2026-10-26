@@ -132,7 +132,7 @@ function register(router) {
   router.put('/api/merchants/:id', safeHandler(async (req, res, params) => {
     if (!requireAuth(req, res)) return;
     const body = await readJsonBody(req);
-    const FEEDBACK_CATEGORIES = ['Resigned', 'Prospect', 'Using Another MID', 'Sijil Close or Deleted'];
+    const FEEDBACK_CATEGORIES = ['Resigned', 'Prospect', 'Using Another MID', 'Sijil Close or Deleted', 'Call back / No Response'];
     let category;
     if (body.category !== undefined) {
       category = String(body.category || '');
